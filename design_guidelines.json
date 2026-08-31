@@ -1,0 +1,99 @@
+{
+  "theme_strategy": {
+    "mode": "Dark Theme (Electric & Neon Archetype)",
+    "vibe": "High-energy, premium youth-festival, raw, immersive."
+  },
+  "typography": {
+    "headings": {
+      "font": "Cabinet Grotesk or Unbounded",
+      "style": "Bold, extended, tracking-tighter, fluid scaling (up to text-6xl for hero). NEVER center-align."
+    },
+    "body": {
+      "font": "Outfit or Manrope",
+      "style": "Clean, geometric, text-base, leading-relaxed."
+    },
+    "data_logistics": {
+      "font": "JetBrains Mono",
+      "style": "Uppercase, tracking-[0.2em], text-sm. Used for time, date, venue, and QR pass IDs."
+    }
+  },
+  "colors": {
+    "background_primary": "#0A0A0A",
+    "background_secondary": "#121212",
+    "surface": "#1A1A1A",
+    "brand_primary": "#EAB308",
+    "brand_secondary": "#EC4899",
+    "accent_success": "#22C55E",
+    "accent_error": "#EF4444",
+    "text_primary": "#F9FAFB",
+    "text_secondary": "#9CA3AF",
+    "borders": "rgba(255, 255, 255, 0.1)"
+  },
+  "visual_enhancers": {
+    "marquees": "Kinetic typographic marquees (infinite scroll) for artist/event lineups. Use text-8xl outline text for background texture.",
+    "glassmorphism": "Crystal glass (bg-black/60 backdrop-blur-xl border-b border-white/10) for sticky headers and floating scanner controls.",
+    "textures": "Subtle noise/grain overlay on dark backgrounds to kill digital flatness.",
+    "grid_borders": "Expose the skeleton on the admin dashboard. 1px border-white/10 on grid items."
+  },
+  "layouts": {
+    "marketing_landing": "Full-bleed hero with bg-black/50 overlay over the crowd image. Asymmetrical Bento grid for event highlights. Generous spacing (py-24, gap-12).",
+    "registration_flow": "Stepped sections. Do not overwhelm with forms. Floating persistent 'Complete Payment' CTA at the bottom.",
+    "admin_dashboard": "High-density Bento grid (grid-cols-1 md:grid-cols-4). Tight gaps (gap-4). Every pixel utilized.",
+    "scanner_app": "Mobile-first. Full-screen camera viewport. Glassmorphic bottom sheet for scan results (Valid/Duplicate/Invalid)."
+  },
+  "components": {
+    "buttons": "Pill-shaped or sharp rectangular. Primary CTA must use brand_primary (Yellow) with pure black text for contrast. Hover: -translate-y-1 with shadow-lg.",
+    "cards": "Flat solid background (#121212), 1px border-white/10, no ambient shadow in dark mode. Sharp or max rounded-lg.",
+    "forms": "Use pure Tailwind inputs. bg-black/50, border-white/10, text-white. Focus state: ring-2 ring-brand_primary outline-none.",
+    "qr_pass": "Neumorphic or glowing technical card. Prominent QR code on #FFFFFF background (for scannability), surrounded by dark festival branding."
+  },
+  "motion": {
+    "interactions": "Hover states on all clickable elements (-translate-y-1 or brightness increase).",
+    "page_load": "Staggered fade-up for grid items. Do NOT use universal 'transition: all'. Explicitly transition transform and opacity."
+  },
+  "accessibility": {
+    "contrast": "Ensure text over brand_primary is #000000. Minimum 4.5:1 for normal text.",
+    "focus": "Clear focus indicators on all inputs and buttons.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., data-testid='checkout-button')."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "Hero Background",
+        "url": "https://images.unsplash.com/photo-1506157786151-b8491531f063?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwxfHx5b3V0aCUyMGZlc3RpdmFsJTIwY29uY2VydCUyMGNyb3dkJTIwbmVvbnxlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "High energy youth concert crowd. Use as full-bleed hero background with bg-black/50 overlay."
+      },
+      {
+        "category": "QR Pass Preview / Success",
+        "url": "https://images.unsplash.com/photo-1600147131759-880e94a6185f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxxciUyMGNvZGUlMjB0aWNrZXQlMjBwYXNzJTIwdHlwb2dyYXBoeXxlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Visual representation of the digital QR pass for the registration success page."
+      },
+      {
+        "category": "Scanner App Context",
+        "url": "https://images.unsplash.com/photo-1629128625414-374a9e16d56a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxtb2JpbGUlMjBldmVudCUyMHNjYW5uZXIlMjBzY2FubmluZ3xlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Contextual image for the admin/scanner feature highlight."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Since the stack is PHP CodeIgniter 4, you MUST construct the UI using standard HTML/PHP views (.php) and pure Tailwind CSS classes.",
+    "DO NOT attempt to use React components (.jsx/.tsx) or Shadcn-React. Implement interactivity using vanilla JavaScript (.js) or Alpine.js.",
+    "For the EaseBuzz payment flow, ensure the checkout form reflects raw HTML functionality with precise Tailwind styling to look premium.",
+    "For the QR Scanner, integrate a vanilla JS library like html5-qrcode within the CI4 view.",
+    "Replicate the Shadcn aesthetic (crisp borders, clean inputs, minimal shadows) using raw Tailwind utility classes."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Don't make generic centered layouts. Use asymmetrical bento grids and heavy left-alignment for typography.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for sticky navs and floating elements.",
+    "You MUST NOT apply universal transition (e.g., transition: all). This breaks transforms. Always add transitions for specific properties.",
+    "You MUST NOT center align the app container. Do not add text-align: center globally.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use Phosphor Icons or Heroicons SVGs.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "CRITICAL: Do not use complete transparent background in header, overlays, or any surface that has content under it. Example: Dropdown with transparent background is strictly forbidden.",
+    "All interactive and key informational elements MUST include a `data-testid` attribute to facilitate robust automated testing."
+  ]
+}

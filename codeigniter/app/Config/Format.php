@@ -1,0 +1,1 @@
+<?php require ROOTPATH . 'vendor/codeigniter4/framework/app/Config/Format.php';

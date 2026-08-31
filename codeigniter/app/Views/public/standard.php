@@ -1,0 +1,1 @@
+<main class="page-shell standard-page"><span class="eyebrow accent"><?= esc($eyebrow) ?></span><h1><?= esc($heading) ?></h1><p class="standard-copy"><?= esc($body) ?></p><a class="button button-yellow" href="<?= base_url('events') ?>">Explore events <span>↗</span></a></main>

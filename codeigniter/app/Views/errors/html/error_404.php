@@ -1,0 +1,1 @@
+<!doctype html><html><body style="background:#0a0a0a;color:#f9fafb;font:16px Arial;padding:10vw"><p style="color:#eab308;letter-spacing:.15em">EUPHORIA / 404</p><h1 style="font-size:64px">Page not found.</h1><a href="<?= base_url('/') ?>" style="color:#eab308">Return home ↗</a></body></html>

@@ -1,0 +1,32 @@
+# Copy this file to .env and replace production values.
+CI_ENVIRONMENT = development
+app.baseURL = 'http://localhost:8080/'
+app.indexPage = ''
+app.appTimezone = 'Asia/Kolkata'
+
+database.default.hostname = localhost
+database.default.database = euphoria
+database.default.username = euphoria_user
+database.default.password = change-me
+database.default.DBDriver = MySQLi
+database.default.DBPrefix =
+database.default.port = 3306
+
+EASEBUZZ_ENV = test
+EASEBUZZ_KEY =
+EASEBUZZ_SALT =
+PAYMENT_MODE = gateway
+EASEBUZZ_TIMEOUT = 20
+
+email.protocol = smtp
+email.SMTPHost = smtp.example.com
+email.SMTPUser =
+email.SMTPPass =
+email.SMTPPort = 587
+email.SMTPCrypto = tls
+email.fromEmail = noreply@example.com
+email.fromName = 'EUPHORIA 2026'
+
+app.forceGlobalSecureRequests = false
+encryption.key =
+security.tokenName = csrf_token

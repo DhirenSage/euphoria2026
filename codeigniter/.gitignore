@@ -1,0 +1,7 @@
+.env
+/writable/cache/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+/writable/passes/*
+/vendor/

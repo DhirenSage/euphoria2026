@@ -1,0 +1,4 @@
+<article class="event-card" data-testid="event-card-<?= esc($event['slug']) ?>">
+    <div class="event-image" style="background-image:url('<?= esc($event['thumbnail_path'] ?: $event['banner_path'] ?: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80') ?>')"><span class="event-index">0<?= esc($index ?? 1) ?></span><span class="event-type"><?= esc(strtoupper($event['event_type'])) ?></span></div>
+    <div class="event-card-body"><div class="event-card-meta"><span><?= esc($event['category_name'] ?? 'EUPHORIA') ?></span><span><?= $event['fee'] > 0 ? esc(money($event['fee'])) : 'FREE' ?></span></div><h3><?= esc($event['name']) ?></h3><p><?= esc($event['short_description'] ?: 'Bring your crew. Make it count.') ?></p><a href="<?= base_url('events/'.$event['slug']) ?>" class="card-link" data-testid="event-card-view-<?= esc($event['slug']) ?>">View event <span>↗</span></a></div>
+</article>

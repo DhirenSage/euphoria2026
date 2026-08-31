@@ -1,0 +1,11 @@
+composer=2.5.5-1+deb12u5
+cron=3.0pl1-162
+mariadb-server=1:10.11.18-0+deb12u1
+php8.2-cli=8.2.33-1~deb12u1
+php8.2-curl=8.2.33-1~deb12u1
+php8.2-gd=8.2.33-1~deb12u1
+php8.2-intl=8.2.33-1~deb12u1
+php8.2-mbstring=8.2.33-1~deb12u1
+php8.2-mysql=8.2.33-1~deb12u1
+php8.2-xml=8.2.33-1~deb12u1
+php8.2-zip=8.2.33-1~deb12u1
