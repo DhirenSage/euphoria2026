@@ -69,6 +69,6 @@ export interface RegistrationResponse {
 }
 
 export interface PaymentInitiationResponse {
-  action: string;
-  fields: Record<string, string>;
+  checkout_url: string;
+  transaction_id: string;
 }

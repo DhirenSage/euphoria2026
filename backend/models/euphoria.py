@@ -79,5 +79,5 @@ class RegistrationResponse(BaseModel):
 
 
 class PaymentInitiationResponse(BaseModel):
-    action: str
-    fields: dict[str, str]
+    checkout_url: str
+    transaction_id: str

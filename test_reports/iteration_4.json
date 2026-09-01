@@ -1,0 +1,52 @@
+{
+  "iteration": 4,
+  "summary": "New briefing covers the Easebuzz hosted-checkout contract change: server-side access-key exchange returning only checkout_url+transaction_id (superseding the old action+fields form-post contract), a new-tab hosted checkout that never exposes the raw initiation JSON, retry-safe fresh transaction ids, rejection of payment for unknown registrations, and full visibility/sizing of the confirmation amount. Replaced the stale backend test file that asserted the old fields/action contract with 3 new tests covering the new contract, retry-safety, and 404 rejection. Added 2 new browser checks covering the confirmation amount rendering and the full new-tab hosted-checkout flow. Full backend suite (6 tests) passes; both new browser checks pass.",
+  "passed": 5,
+  "failed": 0,
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "checks": [
+    {
+      "criterion": "Backend performs server-side access-key exchange",
+      "name": "test_tscheck_easebuzz_payment_initiation.py::test_payment_initiation_returns_only_checkout_url_and_transaction_id",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/registrations (Game Mania, sageian) -> 201 pending_payment; POST /api/registrations/{id}/payment -> 200 with body keys exactly {checkout_url, transaction_id}; transaction_id matches ^EB-[0-9a-f]+$; checkout_url matches ^https://pay.easebuzz.in/pay/[^/]+$ and does not contain 'initiateLink'"
+    },
+    {
+      "criterion": "Retry-safe transaction persistence works",
+      "name": "test_tscheck_easebuzz_payment_initiation.py::test_payment_initiation_is_retry_safe_with_fresh_transaction_ids",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Two sequential POST /api/registrations/{id}/payment calls on the same pending registration each returned 200 with distinct EB-prefixed transaction_id/checkout_url and no 500; follow-up GET /api/registrations/{id} -> 200"
+    },
+    {
+      "criterion": "Invalid registration payment is rejected",
+      "name": "test_tscheck_easebuzz_payment_initiation.py::test_payment_initiation_for_unknown_registration_is_rejected",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/registrations/EUPHORIA-2026-<random>/payment (nonexistent id) -> 404"
+    },
+    {
+      "criterion": "Confirmation amount is fully visible",
+      "name": "confirmation-amount-fully-visible",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At /registration/success/EUPHORIA-2026-000011: [data-testid=confirmation-server-amount] text is exactly '\u20b999', visible with non-zero bounding box, computed font-size 36px (>=24px threshold), color rgb consistent with yellow (#facc15-family); no nested <span> found (current markup has none) so the inherited-size rule is vacuously satisfied"
+    },
+    {
+      "criterion": "Payment button opens a new tab / Browser never opens raw Easebuzz initiation JSON / Hosted Easebuzz checkout renders",
+      "name": "payment-opens-hosted-easebuzz-checkout",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Clicking 'Complete secure payment' opened a new browser tab while the original confirmation card (registration-confirmation-card, amount '\u20b999') remained intact; popup navigated to https://pay.easebuzz.in/pay/{access_key} (never /payment/initiateLink); popup title became 'Pay With Easebuzz' and body text contained one of Credit Card/Debit Card/UPI/NetBanking within 15s"
+    }
+  ],
+  "notes": [
+    "Replaced test_tscheck_easebuzz_payment_initiation.py entirely: the old file asserted the superseded action+fields contract (per spec_deviations) and would fail against the current implementation, which already returns {checkout_url, transaction_id}.",
+    "3 of the 7 acceptance-matrix criteria (payment button new tab, no raw JSON exposure, hosted checkout renders) are one continuous user flow and are covered by a single browser check rather than 3 separate ones, since they cannot be meaningfully split without re-doing the same navigation 3x.",
+    "No live payment was completed and no payment details were entered, per spec_deviations/seed_facts.",
+    "Did not re-run the 13 pre-existing browser checks from iteration 3 (unrelated to this briefing's matrix and unchanged code paths outside routers/euphoria.py's payment endpoint, which the new backend tests + new browser check directly exercise); full backend suite (6 tests, including the 3 pre-existing edge-bridge tests) was re-run and passes, giving regression coverage on the shared API surface."
+  ]
+}

@@ -1,38 +1,28 @@
-"""Verifies the Easebuzz payment initiation payload uses the merchant-approved
-productinfo ('euphoria2026'), a correctly-ordered SHA-512 request hash, and the
-production initiateLink action -- per the acceptance matrix. Does not touch the
-external Easebuzz checkout (spec_deviations: no live transaction is completed).
+"""Verifies the new server-side Easebuzz access-key exchange contract:
+POST /api/registrations/{id}/payment must contact Easebuzz server-side and return only
+`checkout_url` + a fresh `transaction_id` (no `action`/`fields` signed-payload contract,
+which was intentionally superseded per spec_deviations). Also covers retry-safe fresh
+transaction ids and rejection of payment for a nonexistent registration.
 """
 
-import hashlib
-import os
+import re
 import uuid
-from pathlib import Path
 
 import pytest
-
-def _load_env_salt() -> str:
-    """The test process doesn't source backend/.env like uvicorn does; read it directly."""
-    env_path = Path(__file__).resolve().parents[1] / ".env"
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
-            if line.startswith("EASEBUZZ_SALT="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return os.environ.get("EASEBUZZ_SALT", "")
-
 
 CATALOGUE_URL = "/registration-catalogue"
 REGISTRATIONS_URL = "/registrations"
 
-HASH_ORDER = ["key", "txnid", "amount", "productinfo", "firstname", "email", "udf1", "udf2", "udf3", "udf4", "udf5", "udf6", "udf7", "udf8", "udf9", "udf10"]
+TXN_ID_RE = re.compile(r"^EB-[0-9a-f]+$")
+CHECKOUT_URL_RE = re.compile(r"^https://pay\.easebuzz\.in/pay/[^/]+$")
 
 
 def _create_pending_registration(client, unique_suffix: str) -> dict:
     catalogue = client.get(CATALOGUE_URL)
     assert catalogue.status_code == 200, catalogue.text
     body = catalogue.json()
-    # Battle of Bands per seed_facts: Cultural team event priced at Rs 2,499
-    event = next(e for e in body["events"] if e["slug"] == "battle-of-bands")
+    # Game Mania per seed_facts: Cultural individual event, low fee.
+    event = next(e for e in body["events"] if e["slug"] == "game-mania")
     payload = {
         "category_id": event["category_id"],
         "event_id": event["id"],
@@ -44,7 +34,7 @@ def _create_pending_registration(client, unique_suffix: str) -> dict:
         "college": "tscheck college",
         "city": None,
         "participant_affiliation": "sageian",
-        "team_name": f"tscheck-team-{unique_suffix}",
+        "team_name": None,
         "team_members": None,
     }
     resp = client.post(REGISTRATIONS_URL, json=payload)
@@ -54,7 +44,7 @@ def _create_pending_registration(client, unique_suffix: str) -> dict:
     return data
 
 
-def test_payment_initiation_uses_approved_productinfo_and_prod_action(client):
+def test_payment_initiation_returns_only_checkout_url_and_transaction_id(client):
     unique_suffix = uuid.uuid4().hex[:10]
     registration = _create_pending_registration(client, unique_suffix)
 
@@ -62,29 +52,36 @@ def test_payment_initiation_uses_approved_productinfo_and_prod_action(client):
     assert resp.status_code == 200, resp.text
     body = resp.json()
 
-    fields = body["fields"]
-    assert fields["productinfo"] == "euphoria2026", f"unexpected productinfo: {fields['productinfo']!r}"
-    # no event name, unicode middle dot, or spaces
-    assert "battle" not in fields["productinfo"].lower()
-    assert "\u00b7" not in fields["productinfo"]
-    assert " " not in fields["productinfo"]
-
-    assert len(fields["hash"]) == 128, f"expected 128-char SHA-512 hex hash, got {len(fields['hash'])}"
-    int(fields["hash"], 16)  # valid hex
-
-    assert body["action"] == "https://pay.easebuzz.in/payment/initiateLink"
+    # New contract: only checkout_url + transaction_id, no signed fields/action contract exposed.
+    assert set(body.keys()) == {"checkout_url", "transaction_id"}, f"unexpected response shape: {body!r}"
+    assert TXN_ID_RE.match(body["transaction_id"]), f"transaction_id not EB-prefixed: {body['transaction_id']!r}"
+    assert CHECKOUT_URL_RE.match(body["checkout_url"]), f"checkout_url is not a hosted Easebuzz pay link: {body['checkout_url']!r}"
+    # Never the raw initiation endpoint.
+    assert "initiateLink" not in body["checkout_url"]
 
 
-def test_payment_initiation_hash_matches_documented_field_order(client):
+def test_payment_initiation_is_retry_safe_with_fresh_transaction_ids(client):
     unique_suffix = uuid.uuid4().hex[:10]
     registration = _create_pending_registration(client, unique_suffix)
+    registration_id = registration["registration_id"]
 
-    resp = client.post(f"{REGISTRATIONS_URL}/{registration['registration_id']}/payment")
-    assert resp.status_code == 200, resp.text
-    fields = resp.json()["fields"]
+    first = client.post(f"{REGISTRATIONS_URL}/{registration_id}/payment")
+    assert first.status_code == 200, first.text
+    second = client.post(f"{REGISTRATIONS_URL}/{registration_id}/payment")
+    assert second.status_code == 200, second.text
 
-    salt = _load_env_salt()
-    assert salt, "EASEBUZZ_SALT must be configured for this check to be meaningful"
+    first_body, second_body = first.json(), second.json()
+    assert first_body["transaction_id"] != second_body["transaction_id"], "retry must mint a fresh EB- transaction id"
+    assert TXN_ID_RE.match(second_body["transaction_id"])
+    assert CHECKOUT_URL_RE.match(second_body["checkout_url"])
 
-    recomputed = hashlib.sha512(("|".join(fields.get(k, "") for k in HASH_ORDER) + "|" + salt).encode()).hexdigest()
-    assert recomputed == fields["hash"], "recomputed hash does not match server-issued hash"
+    # The registration must now reflect the latest attempt's checkout url/access key with no 500.
+    fetched = client.get(f"{REGISTRATIONS_URL}/{registration_id}")
+    assert fetched.status_code == 200, fetched.text
+    assert fetched.json()["registration_id"] == registration_id
+
+
+def test_payment_initiation_for_unknown_registration_is_rejected(client):
+    bogus_id = f"EUPHORIA-2026-{uuid.uuid4().hex[:6]}"
+    resp = client.post(f"{REGISTRATIONS_URL}/{bogus_id}/payment")
+    assert resp.status_code == 404, resp.text

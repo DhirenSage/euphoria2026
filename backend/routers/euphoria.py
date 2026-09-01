@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+import httpx
 from pymongo import ReturnDocument
 
 from lib.catalogue import CATEGORIES, ensure_catalogue
@@ -98,7 +99,7 @@ async def create_registration(payload: RegistrationCreate):
 
 @router.get("/registrations/{registration_id}", response_model=RegistrationResponse)
 async def get_registration(registration_id: str):
-    row = await db.euphoria_registrations.find_one({"registration_id": registration_id}, {"_id": 0})
+    row = await db.euphoria_registrations.find_one({"registration_id": registration_id})
     if not row:
         raise HTTPException(status_code=404, detail="Registration not found.")
     return row
@@ -106,7 +107,7 @@ async def get_registration(registration_id: str):
 
 @router.post("/registrations/{registration_id}/payment", response_model=PaymentInitiationResponse)
 async def initiate_payment(registration_id: str):
-    row = await db.euphoria_registrations.find_one({"registration_id": registration_id}, {"_id": 0})
+    row = await db.euphoria_registrations.find_one({"registration_id": registration_id})
     if not row:
         raise HTTPException(status_code=404, detail="Registration not found.")
     if row["status"] == "confirmed":
@@ -116,9 +117,10 @@ async def initiate_payment(registration_id: str):
         raise HTTPException(status_code=503, detail="Easebuzz is not configured.")
     app_url = os.environ.get("APP_URL", "").rstrip("/")
     product_info = os.environ.get("EASEBUZZ_PRODUCTINFO", "euphoria2026")
+    transaction_id = f"EB-{secrets.token_hex(12)}"
     fields = {
         "key": key,
-        "txnid": row["payment"]["txnid"],
+        "txnid": transaction_id,
         "amount": f"{row['total_amount']:.2f}",
         "productinfo": product_info,
         "firstname": row["participant_name"],
@@ -130,8 +132,24 @@ async def initiate_payment(registration_id: str):
     }
     hash_order = ["key", "txnid", "amount", "productinfo", "firstname", "email", "udf1", "udf2", "udf3", "udf4", "udf5", "udf6", "udf7", "udf8", "udf9", "udf10"]
     fields["hash"] = hashlib.sha512(("|".join(fields.get(item, "") for item in hash_order) + "|" + salt).encode()).hexdigest()
-    endpoint = "https://pay.easebuzz.in/payment/initiateLink" if os.environ.get("EASEBUZZ_ENV") == "prod" else "https://testpay.easebuzz.in/payment/initiateLink"
-    return {"action": endpoint, "fields": {key: str(value) for key, value in fields.items()}}
+    production = os.environ.get("EASEBUZZ_ENV") == "prod"
+    endpoint = "https://pay.easebuzz.in/payment/initiateLink" if production else "https://testpay.easebuzz.in/payment/initiateLink"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(endpoint, data=fields)
+    try:
+        gateway = response.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="Easebuzz returned an invalid initiation response.") from exc
+    access_key = gateway.get("data") or gateway.get("access_key")
+    if response.status_code >= 400 or gateway.get("status") != 1 or not isinstance(access_key, str):
+        raise HTTPException(status_code=502, detail=gateway.get("error_desc") or "Easebuzz could not create the payment page.")
+    checkout_base = "https://pay.easebuzz.in/pay" if production else "https://testpay.easebuzz.in/pay"
+    checkout_url = f"{checkout_base}/{access_key}"
+    await db.euphoria_registrations.update_one(
+        {"_id": row["_id"]},
+        {"$set": {"payment.txnid": transaction_id, "payment.status": "initiated", "payment.access_key": access_key, "payment.checkout_url": checkout_url, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return {"checkout_url": checkout_url, "transaction_id": transaction_id}
 
 
 @router.post("/payments/easebuzz/callback")

@@ -14,9 +14,10 @@ class PaymentController extends BaseController
         if (!$registration) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         if ($registration['status'] === 'confirmed') return redirect()->to('/registration/success/'.$registrationCode);
         try {
-            $result = (new EasebuzzGateway())->initiate(['txnid'=>$registration['txnid'],'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026'),'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
-            $db->table('payments')->where('txnid',$registration['txnid'])->whereIn('status',['created','pending'])->update(['status'=>'initiated','updated_at'=>date('Y-m-d H:i:s')]);
-            return view('payments/redirect_form', $result);
+            $transactionId='EB-'.bin2hex(random_bytes(12));
+            $result = (new EasebuzzGateway())->initiate(['txnid'=>$transactionId,'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026'),'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
+            $db->table('payments')->where('registration_id',$registration['id'])->whereIn('status',['created','pending','initiated'])->update(['txnid'=>$transactionId,'status'=>'initiated','gateway_order_id'=>$result['access_key'],'updated_at'=>date('Y-m-d H:i:s')]);
+            return redirect()->to($result['checkout_url']);
         } catch (\RuntimeException $e) {
             return $this->render('payments/unavailable',['registration'=>$registration,'message'=>$e->getMessage(),'title'=>'Payment setup required']);
         }

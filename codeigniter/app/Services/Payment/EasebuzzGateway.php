@@ -33,7 +33,16 @@ final class EasebuzzGateway implements PaymentGatewayInterface
         $values = array_map(fn (string $field) => (string) ($payload[$field] ?? ''), $hashFields);
         $payload['hash'] = hash('sha512', implode('|', [...$values, $this->salt]));
         unset($payload['udf8'], $payload['udf9'], $payload['udf10']);
-        return ['redirect' => $this->baseUrl() . 'payment/initiateLink', 'fields' => $payload];
+        $ch = curl_init($this->baseUrl() . 'payment/initiateLink');
+        curl_setopt_array($ch, [CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>http_build_query($payload),CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>(int)env('EASEBUZZ_TIMEOUT',20),CURLOPT_SSL_VERIFYPEER=>true]);
+        $raw = curl_exec($ch);
+        if ($raw === false) throw new RuntimeException(curl_error($ch));
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $gateway = json_decode($raw, true);
+        $accessKey = $gateway['data'] ?? $gateway['access_key'] ?? null;
+        if ($statusCode >= 400 || ($gateway['status'] ?? 0) != 1 || !is_string($accessKey)) throw new RuntimeException($gateway['error_desc'] ?? 'Easebuzz could not create the payment page.');
+        return ['checkout_url'=>$this->baseUrl().'pay/'.rawurlencode($accessKey),'access_key'=>$accessKey];
     }
 
     public function verifyCallback(array $payload): bool
