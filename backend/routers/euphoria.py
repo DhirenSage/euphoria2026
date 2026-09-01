@@ -156,7 +156,13 @@ async def initiate_payment(registration_id: str):
 async def easebuzz_callback(request: Request):
     body = parse_qs((await request.body()).decode())
     payload = {key: values[0] for key, values in body.items()}
-    salt = os.environ.get("EASEBUZZ_SALT", "")
+    payload_key = payload.get("key", "")
+    if payload_key == os.environ.get("EASEBUZZ_KEY", ""):
+        salt = os.environ.get("EASEBUZZ_SALT", "")
+    elif payload_key == os.environ.get("EASEBUZZ_BACKUP_KEY", ""):
+        salt = os.environ.get("EASEBUZZ_BACKUP_SALT", "")
+    else:
+        salt = ""
     reverse = [salt, payload.get("status", ""), payload.get("udf10", ""), payload.get("udf9", ""), payload.get("udf8", ""), payload.get("udf7", ""), payload.get("udf6", ""), payload.get("udf5", ""), payload.get("udf4", ""), payload.get("udf3", ""), payload.get("udf2", ""), payload.get("udf1", ""), payload.get("email", ""), payload.get("firstname", ""), payload.get("productinfo", ""), payload.get("amount", ""), payload.get("txnid", ""), payload.get("key", "")]
     expected = hashlib.sha512("|".join(reverse).encode()).hexdigest()
     if not payload.get("hash") or not secrets.compare_digest(expected.lower(), payload["hash"].lower()):

@@ -12,6 +12,8 @@ The shared `/registration` form now loads exactly four registration categories a
 
 The public preview mirrors that 32-event catalogue in Mongo and offers the same server-owned pricing contract through `/api/registration-catalogue`, `/api/registrations`, and `/api/registrations/{id}/payment`. The responsive UI uses the supplied official SAGE University Indore and EUPHORIA logo assets across public, registration, operations, scanner, pass, PDF, and email surfaces.
 
+Every event card links to `/events/{event-slug}`. Event records include a banner, full description, date/time, deadline, venue, eligibility, fee, capacity, registration/team configuration, schedule, rules, prizes, and coordinator details. The detail-page Register Now CTA opens the shared registration form with that event preselected.
+
 ## Roles
 `SUPER_ADMIN`, `PROGRAMME_ADMIN`, `EVENT_ADMIN`, `FINANCE`, `SCANNER`, `CONTENT_MANAGER`, `REPORT_VIEWER`. Authentication is session-based with password hashes; scanner/admin routes are protected by CodeIgniter filters.
 
@@ -19,7 +21,7 @@ The public preview mirrors that 32-event catalogue in Mongo and offers the same 
 Programme → Categories → Events → Event days, registration fields, registrations → field values, members, payments, QR tokens, attendance. Gates belong to programmes. Users map to roles. Settings and audit logs support deployment configuration and compliance.
 
 ## Integrations
-Easebuzz is isolated behind `PaymentGatewayInterface` in CodeIgniter and a matching server-side payment route in the preview API. Easebuzz production initiation is configured with the user-confirmed first merchant pair; the second pair is retained as inactive backup configuration. Payment success is accepted only through server-side callback signature verification. **UNAVAILABLE:** SMTP delivery remains disabled until SMTP credentials are provided.
+Easebuzz is isolated behind `PaymentGatewayInterface` in CodeIgniter and a matching server-side payment route in the preview API. Easebuzz production initiation now uses the user-confirmed second merchant pair; the first pair is retained as inactive backup configuration. Callback verification selects the correct salt from the callback merchant key so previously initiated backup-pair transactions remain verifiable. Payment success is accepted only through server-side signature verification. **UNAVAILABLE:** SMTP delivery remains disabled until SMTP credentials are provided.
 
 Easebuzz `productinfo` is the merchant-approved alphanumeric value `euphoria2026` in both payment implementations and is included unchanged in SHA-512 request/callback verification. Registration affiliation is presentation-only for current pricing: switching between SAGEian and Non-SAGEian never clears the selected event or changes/hides its server-owned fee.
 

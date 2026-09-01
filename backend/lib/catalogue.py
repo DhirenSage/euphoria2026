@@ -44,25 +44,80 @@ EVENTS = [
 
 CATEGORY_NAMES = {item["id"]: item["name"] for item in CATEGORIES}
 
-EVENT_DOCUMENTS = [
-    {
+CATEGORY_DETAILS = {
+    "cultural": {
+        "venue": "Main Auditorium · SAGE University Indore",
+        "banner_url": "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1800&q=85",
+        "eligibility": "Open to school and college students with a valid institutional ID.",
+        "coordinator_name": "EUPHORIA Cultural Coordination Team",
+    },
+    "literary-management": {
+        "venue": "Seminar Hall · SAGE University Indore",
+        "banner_url": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1800&q=85",
+        "eligibility": "Open to school and college students; participants must carry a valid ID.",
+        "coordinator_name": "EUPHORIA Literary & Management Team",
+    },
+    "sci-pha-agro": {
+        "venue": "Innovation Lab · SAGE University Indore",
+        "banner_url": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1800&q=85",
+        "eligibility": "Open to student innovators; original work and institutional ID are required.",
+        "coordinator_name": "EUPHORIA Sci-Pha-Agro Team",
+    },
+    "sports": {
+        "venue": "University Sports Complex · SAGE University Indore",
+        "banner_url": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1800&q=85",
+        "eligibility": "Open to school and college students who are medically fit to participate.",
+        "coordinator_name": "EUPHORIA Sports Coordination Team",
+    },
+}
+
+
+def build_event_document(event):
+    category_id, name, slug, fee, registration_type, min_team_size, max_team_size = event
+    details = CATEGORY_DETAILS[category_id]
+    rules = [
+        "Carry the registration confirmation and a valid institutional photo ID.",
+        "Report at the venue at least 30 minutes before the scheduled start.",
+        "Follow coordinator, safety and venue instructions throughout the event.",
+        "The judges' and organising committee's decision will be final.",
+    ]
+    if registration_type == "team":
+        rules.insert(1, f"Teams must have between {min_team_size} and {max_team_size} registered members.")
+    return {
         "id": slug,
         "category_id": category_id,
         "category_name": CATEGORY_NAMES[category_id],
         "name": name,
         "slug": slug,
-        "short_description": f"Register for {name} at EUPHORIA 2K26.",
+        "short_description": f"Step into {name} and make your EUPHORIA 2K26 moment count.",
+        "description": f"{name} is an official EUPHORIA 2K26 event at SAGE University Indore. It brings students together to compete, perform and learn in a professionally coordinated festival environment.",
         "event_type": "sports" if category_id == "sports" else "competition",
         "registration_type": registration_type,
         "fee": fee,
         "capacity": 250,
-        "venue": "SAGE University Indore",
+        "venue": details["venue"],
         "status": "registration_open",
         "min_team_size": min_team_size,
         "max_team_size": max_team_size,
+        "banner_url": details["banner_url"],
+        "event_date": "15 September 2026",
+        "event_time": "10:00 AM – 6:00 PM",
+        "registration_deadline": "14 September 2026 · 11:59 PM",
+        "eligibility": details["eligibility"],
+        "rules": rules,
+        "prizes": ["Winner trophy and merit certificate", "Runner-up merit certificate", "Participation certificate for eligible participants"],
+        "coordinator_name": details["coordinator_name"],
+        "coordinator_contact": "EUPHORIA Event Desk · SAGE University Indore",
+        "schedule": [
+            {"time": "09:30 AM", "title": "Reporting & verification"},
+            {"time": "10:00 AM", "title": "Event briefing"},
+            {"time": "10:15 AM", "title": "Competition begins"},
+            {"time": "05:30 PM", "title": "Results & recognition"},
+        ],
     }
-    for category_id, name, slug, fee, registration_type, min_team_size, max_team_size in EVENTS
-]
+
+
+EVENT_DOCUMENTS = [build_event_document(event) for event in EVENTS]
 
 
 async def ensure_catalogue(db) -> None:

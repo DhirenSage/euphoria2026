@@ -6,7 +6,7 @@ export default function SiteHeader() {
     <header className="site-header" data-testid="site-header">
       <Link to="/" className="site-brand" data-testid="brand-home-link"><BrandLockup /></Link>
       <nav className="site-nav" data-testid="main-navigation">
-        <a href="/#events" data-testid="nav-events-link">Events</a>
+        <Link to="/events" data-testid="nav-events-link">Events</Link>
         <a href="/#categories" data-testid="nav-categories-link">Categories</a>
         <Link to="/admin" data-testid="nav-admin-link">Admin</Link>
       </nav>

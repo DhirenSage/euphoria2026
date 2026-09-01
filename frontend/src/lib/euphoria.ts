@@ -11,6 +11,7 @@ export interface EuphoriaEvent {
   name: string;
   slug: string;
   short_description: string | null;
+  description: string;
   event_type: string;
   registration_type: string;
   fee: number;
@@ -19,6 +20,16 @@ export interface EuphoriaEvent {
   status: string;
   min_team_size: number | null;
   max_team_size: number | null;
+  banner_url: string;
+  event_date: string;
+  event_time: string;
+  registration_deadline: string;
+  eligibility: string;
+  rules: string[];
+  prizes: string[];
+  coordinator_name: string;
+  coordinator_contact: string;
+  schedule: Array<{ time: string; title: string }>;
 }
 
 export interface EuphoriaEventsResponse {

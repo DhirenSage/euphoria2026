@@ -1,16 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import BrandLockup from "@/components/BrandLockup";
+import EventCard from "@/components/EventCard";
 import SiteHeader from "@/components/SiteHeader";
 import { apiGet } from "@/lib/api";
 import type { EuphoriaEventsResponse } from "@/lib/euphoria";
-
-const EVENT_IMAGE: Record<string, string> = {
-  cultural: "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=900&q=80",
-  sports: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=900&q=80",
-  "literary-management": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80",
-  "sci-pha-agro": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=900&q=80",
-};
 
 export default function Home() {
   const { data } = useQuery({ queryKey: ["events"], queryFn: () => apiGet<EuphoriaEventsResponse>("/events") });
@@ -47,14 +41,9 @@ export default function Home() {
         </section>
 
         <section id="events" className="content-section event-section">
-          <div className="section-heading"><div><p className="eyebrow">02 / THE LINEUP</p><h2>Find your<br /><em>moment.</em></h2></div><Link to="/registration" className="text-link">Register for an event ↗</Link></div>
+          <div className="section-heading"><div><p className="eyebrow">02 / THE LINEUP</p><h2>Find your<br /><em>moment.</em></h2></div><Link to="/events" className="text-link">View all 32 events ↗</Link></div>
           <div className="event-grid" data-testid="event-grid">
-            {events.slice(0, 8).map((event, index) => (
-              <article className="event-card" key={event.id} data-testid={`event-card-${event.slug}`}>
-                <div className="event-image" style={{ backgroundImage: `url(${EVENT_IMAGE[event.category_id]})` }}><span>0{index + 1}</span><b>{event.category_name}</b></div>
-                <div className="event-body"><div className="event-meta"><span>{event.registration_type}</span><strong>₹{event.fee.toLocaleString("en-IN")}</strong></div><h3>{event.name}</h3><p>{event.short_description}</p><Link to={`/registration/${event.slug}`} data-testid={`event-register-${event.slug}`}>Register <span>↗</span></Link></div>
-              </article>
-            ))}
+            {events.slice(0, 8).map((event, index) => <EventCard event={event} index={index} key={event.id}/>) }
           </div>
         </section>
       </main>

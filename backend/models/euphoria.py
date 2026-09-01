@@ -16,6 +16,11 @@ class EuphoriaCategory(BaseModel):
     order: int
 
 
+class EventScheduleItem(BaseModel):
+    time: str
+    title: str
+
+
 class EuphoriaEvent(BaseModel):
     id: str
     category_id: str
@@ -23,6 +28,7 @@ class EuphoriaEvent(BaseModel):
     name: str
     slug: str
     short_description: str
+    description: str
     event_type: str
     registration_type: Literal["individual", "team"]
     fee: float
@@ -31,6 +37,16 @@ class EuphoriaEvent(BaseModel):
     status: str
     min_team_size: int | None = None
     max_team_size: int | None = None
+    banner_url: str
+    event_date: str
+    event_time: str
+    registration_deadline: str
+    eligibility: str
+    rules: list[str]
+    prizes: list[str]
+    coordinator_name: str
+    coordinator_contact: str
+    schedule: list[EventScheduleItem]
 
 
 class EuphoriaEventsMeta(BaseModel):

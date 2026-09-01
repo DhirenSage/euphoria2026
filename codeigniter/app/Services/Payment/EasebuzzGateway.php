@@ -47,9 +47,11 @@ final class EasebuzzGateway implements PaymentGatewayInterface
 
     public function verifyCallback(array $payload): bool
     {
-        if ($this->salt === '') return false;
+        $callbackSalt = $this->salt;
+        if (($payload['key'] ?? '') !== $this->key && ($payload['key'] ?? '') === (string)env('EASEBUZZ_BACKUP_KEY','')) $callbackSalt = (string)env('EASEBUZZ_BACKUP_SALT','');
+        if ($callbackSalt === '' || !in_array(($payload['key'] ?? ''),[$this->key,(string)env('EASEBUZZ_BACKUP_KEY','')],true)) return false;
         $fields = ['salt','status','udf10','udf9','udf8','udf7','udf6','udf5','udf4','udf3','udf2','udf1','email','firstname','productinfo','amount','txnid','key'];
-        $values = array_map(fn (string $field) => $field === 'salt' ? $this->salt : (string) ($payload[$field] ?? ''), $fields);
+        $values = array_map(fn (string $field) => $field === 'salt' ? $callbackSalt : (string) ($payload[$field] ?? ''), $fields);
         $expected = hash('sha512', implode('|', $values));
         return isset($payload['hash']) && hash_equals(strtolower($expected), strtolower((string) $payload['hash']));
     }
