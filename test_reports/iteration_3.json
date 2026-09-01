@@ -1,0 +1,121 @@
+{
+  "iteration": 3,
+  "summary": "New briefing covers 7 acceptance-matrix criteria: Easebuzz productinfo/hash correctness, Non-SAGEian affiliation no longer hiding/resetting the event or fee (desktop + mobile), end-to-end persistence after affiliation change, and larger/responsive typography. Added 1 backend pytest file (2 tests) for the Easebuzz payment payload and 4 new browser checks; re-ran all 8 pre-existing browser checks and the full backend suite to confirm no regression. All 15 artifacts pass.",
+  "passed": 15,
+  "failed": 0,
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "checks": [
+    {
+      "criterion": "Easebuzz productinfo uses the merchant-approved value",
+      "name": "test_tscheck_easebuzz_payment_initiation.py::test_payment_initiation_uses_approved_productinfo_and_prod_action",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/registrations (Battle of Bands, sageian) -> 201 pending_payment; POST /api/registrations/{id}/payment -> 200 fields.productinfo='euphoria2026' (no event name/middle-dot/spaces), fields.hash is 128 hex chars, action='https://pay.easebuzz.in/payment/initiateLink'"
+    },
+    {
+      "criterion": "Easebuzz request hash includes the corrected product value",
+      "name": "test_tscheck_easebuzz_payment_initiation.py::test_payment_initiation_hash_matches_documented_field_order",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Recomputed SHA-512 over key|txnid|amount|productinfo|firstname|email|udf1..udf10|salt (server's own hash_order) with EASEBUZZ_SALT from backend/.env == server-issued fields.hash"
+    },
+    {
+      "criterion": "Non-SAGEian selection never hides or resets amount on desktop",
+      "name": "non-sageian-keeps-fee-desktop",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 1280px: Cultural -> Battle of Bands shows inline fee and summary fee both containing '2,499'; switching participant type to Non-SAGEian keeps event-select value non-empty and both fees still show '2,499'"
+    },
+    {
+      "criterion": "Non-SAGEian amount remains visible on mobile",
+      "name": "non-sageian-fee-visible-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 390px: Sports -> Chess shows fee '200'; after selecting Non-SAGEian, fee value still '200', affiliation-fee-note visible, document scrollWidth-clientWidth <= 2px (no overflow)"
+    },
+    {
+      "criterion": "Registration still persists after affiliation change",
+      "name": "non-sageian-registration-persists-pending-payment",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Filled unique participant, set affiliation=Non-SAGEian, selected Sports/Chess (fee '200') -> submit -> redirected to /registration/success/EUPHORIA-2026-###### matching regex, page shows 'PENDING PAYMENT' and '200'"
+    },
+    {
+      "criterion": "Website typography is larger and readable",
+      "name": "typography-readable-sizes-desktop",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 1280px on /registration: computed body font=17px, .site-nav font=14px, name input font=15px, form label font=13px; no horizontal clipping on .registration-card (scrollWidth-clientWidth<=2px)"
+    },
+    {
+      "criterion": "Header remains responsive after font increase",
+      "name": "header-responsive-after-font-increase",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "SAGE and EUPHORIA logo <img> elements visible with non-zero width and the register CTA visible at both 1280px and 390px; document-level horizontal overflow <=2px and .site-header width <= viewport at 390px"
+    },
+    {
+      "criterion": "Registration page visual quality is compact and professional (pre-existing, regression check)",
+      "name": "registration-desktop-layout-quality",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Registration form is mobile responsive (pre-existing, regression check)",
+      "name": "registration-mobile-responsive",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Category and event selection remains functional (pre-existing, regression check)",
+      "name": "category-event-selection-functional",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Server-owned pricing and team fields remain correct (pre-existing, regression check)",
+      "name": "pricing-and-team-fields-correct",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Registration persists successfully end-to-end (pre-existing, regression check)",
+      "name": "volleyball-registration-persists-pending-payment",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Official branding is used consistently (pre-existing, regression check)",
+      "name": "branding-consistent-across-surfaces",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Public home is responsive (pre-existing, regression check)",
+      "name": "home-responsive-no-overflow",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    },
+    {
+      "criterion": "Operations surfaces are responsive (pre-existing, regression check)",
+      "name": "ops-surfaces-mobile-no-overflow",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run: passed, no change"
+    }
+  ],
+  "notes": [
+    "7 acceptance-matrix criteria in this briefing were each covered by a new artifact (2 backend + 4 browser = 6 new artifacts, since one criterion had no separate UI surface beyond the desktop/mobile fee checks already covering it); the remaining 8 checks are the prior iteration's untouched criteria, re-run to confirm no regression from this round's Easebuzz/typography/affiliation changes.",
+    "Live Easebuzz checkout was never opened/submitted; only the server-generated initiation payload (fields + action) was verified, per spec_deviations.",
+    "React <option label=...> elements render an empty textContent (label is an attribute, not a child), so checks read option.label via evaluateAll instead of allTextContents() when matching event names."
+  ]
+}

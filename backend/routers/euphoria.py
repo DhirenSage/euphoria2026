@@ -115,11 +115,12 @@ async def initiate_payment(registration_id: str):
     if not key or not salt:
         raise HTTPException(status_code=503, detail="Easebuzz is not configured.")
     app_url = os.environ.get("APP_URL", "").rstrip("/")
+    product_info = os.environ.get("EASEBUZZ_PRODUCTINFO", "euphoria2026")
     fields = {
         "key": key,
         "txnid": row["payment"]["txnid"],
         "amount": f"{row['total_amount']:.2f}",
-        "productinfo": f"EUPHORIA 2026 · {row['event_name']}",
+        "productinfo": product_info,
         "firstname": row["participant_name"],
         "email": row["email"],
         "phone": row["mobile"],

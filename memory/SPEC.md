@@ -21,5 +21,7 @@ Programme → Categories → Events → Event days, registration fields, registr
 ## Integrations
 Easebuzz is isolated behind `PaymentGatewayInterface` in CodeIgniter and a matching server-side payment route in the preview API. Easebuzz production initiation is configured with the user-confirmed first merchant pair; the second pair is retained as inactive backup configuration. Payment success is accepted only through server-side callback signature verification. **UNAVAILABLE:** SMTP delivery remains disabled until SMTP credentials are provided.
 
+Easebuzz `productinfo` is the merchant-approved alphanumeric value `euphoria2026` in both payment implementations and is included unchanged in SHA-512 request/callback verification. Registration affiliation is presentation-only for current pricing: switching between SAGEian and Non-SAGEian never clears the selected event or changes/hides its server-owned fee.
+
 ## Demo credentials
 See `memory/test_credentials.md`. Remove seeded demo accounts before production.

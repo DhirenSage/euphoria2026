@@ -14,7 +14,7 @@ class PaymentController extends BaseController
         if (!$registration) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         if ($registration['status'] === 'confirmed') return redirect()->to('/registration/success/'.$registrationCode);
         try {
-            $result = (new EasebuzzGateway())->initiate(['txnid'=>$registration['txnid'],'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>'EUPHORIA 2026 · '.$registration['event_name'],'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
+            $result = (new EasebuzzGateway())->initiate(['txnid'=>$registration['txnid'],'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026'),'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
             $db->table('payments')->where('txnid',$registration['txnid'])->whereIn('status',['created','pending'])->update(['status'=>'initiated','updated_at'=>date('Y-m-d H:i:s')]);
             return view('payments/redirect_form', $result);
         } catch (\RuntimeException $e) {

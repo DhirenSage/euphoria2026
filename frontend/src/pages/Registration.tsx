@@ -15,6 +15,7 @@ export default function Registration() {
   const preselected = data?.events.find((event) => event.slug === eventSlug);
   const [categoryId, setCategoryId] = useState("");
   const [eventId, setEventId] = useState("");
+  const [affiliation, setAffiliation] = useState<"" | "sageian" | "non_sageian">("");
   useEffect(() => {
     if (preselected && categoryId === "" && eventId === "") {
       setCategoryId(preselected.category_id);
@@ -57,13 +58,13 @@ export default function Registration() {
               <label>Your age <small>Optional</small><input name="age" type="number" min="10" max="100" placeholder="Age" data-testid="registration-age-input" /></label>
               <label>School / college name *<input name="college" required placeholder="Institution name" data-testid="registration-college-input" /></label>
               <label>City <small>Optional</small><input name="city" placeholder="Your city" data-testid="registration-city-input" /></label>
-              <label>Participant type *<select name="participant_affiliation" required defaultValue="" data-testid="registration-affiliation-select"><option value="" disabled>Select affiliation</option><option value="sageian">SAGEian</option><option value="non_sageian">Non-SAGEian</option></select></label>
+              <label>Participant type *<select name="participant_affiliation" required value={affiliation} onChange={(event) => setAffiliation(event.target.value as "" | "sageian" | "non_sageian")} data-testid="registration-affiliation-select"><option value="" disabled>Select affiliation</option><option value="sageian">SAGEian</option><option value="non_sageian">Non-SAGEian</option></select></label>
             </div></section>
             <section className="form-block event-block"><b className="block-number">02</b><div className="block-heading"><p className="eyebrow">EVENT SELECTION</p><h3>Choose where you want to compete</h3></div>
               <div className="form-grid"><label>Event category *<select value={effectiveCategory} required onChange={(e) => { setCategoryId(e.target.value); setEventId(""); }} data-testid="registration-category-select"><option value="">Select Event Category</option>{data?.categories.map((category) => <option key={category.id} value={category.id} label={category.name} />)}</select></label>
                 <label className={`event-select-wrap ${effectiveCategory ? "visible" : ""}`}>Event *<select value={effectiveEvent} required disabled={!effectiveCategory || isLoading} onChange={(e) => setEventId(e.target.value)} data-testid="registration-event-select"><option value="">Choose an event</option>{filteredEvents.map((event) => <option key={event.id} value={event.id} label={`${event.name} – ${money(event.fee)}`} />)}</select></label>
               </div>
-              {selectedEvent && <div className="selected-event" data-testid="registration-event-details"><div><span>SELECTED EVENT</span><strong>{selectedEvent.name}</strong></div><div><span>FEE</span><strong>{money(selectedEvent.fee)}</strong></div><div><span>ENTRY</span><strong>{selectedEvent.registration_type.toUpperCase()}</strong></div></div>}
+              {selectedEvent && <><div className="selected-event" data-testid="registration-event-details"><div><span>SELECTED EVENT</span><strong>{selectedEvent.name}</strong></div><div><span>FEE</span><strong>{money(selectedEvent.fee)}</strong></div><div><span>ENTRY</span><strong>{selectedEvent.registration_type.toUpperCase()}</strong></div></div><p className="affiliation-fee-note" data-testid="affiliation-fee-note">The displayed fee remains the same for SAGEian and Non-SAGEian registrations.</p></>}
               {selectedEvent?.registration_type === "team" && <div className="team-panel" data-testid="registration-team-panel"><div className="block-heading"><p className="eyebrow">TEAM DETAILS</p><h3>Register your team captain now</h3></div><div className="form-grid"><label>Team name *<input name="team_name" required placeholder="Your team name" data-testid="registration-team-input" /></label><label>Team members <small>Optional now</small><textarea name="team_members" placeholder="One member per line" data-testid="registration-team-members-input" /></label></div><p data-testid="registration-team-size">TEAM SIZE / {selectedEvent.min_team_size}–{selectedEvent.max_team_size} MEMBERS</p></div>}
             </section>
           </div>

@@ -17,6 +17,7 @@ EASEBUZZ_KEY =
 EASEBUZZ_SALT =
 PAYMENT_MODE = gateway
 EASEBUZZ_TIMEOUT = 20
+EASEBUZZ_PRODUCTINFO = euphoria2026
 
 email.protocol = smtp
 email.SMTPHost = smtp.example.com
