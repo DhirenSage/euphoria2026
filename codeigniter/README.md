@@ -2,6 +2,8 @@
 
 CodeIgniter 4 + PHP 8.2 foundation for a reusable multi-programme event platform.
 
+The public `/registration` route is the shared Euphoria 2K26 form. Its category/event dropdowns are populated from MySQL, and event prices are never accepted from browser input; `RegistrationController` validates the selected category/event pair and `RegistrationService` reads the amount from the authoritative event row.
+
 ## Local setup
 
 ```bash
@@ -59,5 +61,7 @@ Keep the test and production credentials separate. Configure the Easebuzz succes
 6. Force HTTPS, secure cookies, CSRF protection and a rate limit on login, registration, callback and scanner endpoints.
 7. Run queue workers under Supervisor/systemd. The `php spark queue:work` command is the integration point for queued pass emails, reminders and retries; add failed-job storage and alerting before launch.
 8. Schedule payment reconciliation for `pending`/`unknown` records and reminder jobs through the host cron calling a CI4 command.
+
+Emergent does not provide managed MySQL. The public preview uses pod-local MariaDB only for evaluation; production must supply an external managed MySQL 8 host through `.env`. `deploy/supervisor-codeigniter.conf` runs the PHP web process separately on a conventional Linux host. The Node wrapper under `frontend/scripts` exists only because this preview's read-only Supervisor exposes `yarn dev` as its port-3000 entrypoint.
 
 The preview pod is still managed by a read-only React/FastAPI Supervisor configuration, so this CodeIgniter tree is the deployment-ready source and is run with `php spark serve` or a PHP-FPM/Apache/Nginx host.

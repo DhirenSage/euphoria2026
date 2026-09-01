@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -10,7 +9,8 @@ from pydantic import BaseModel, Field
 from typing import List
 import uuid
 from datetime import datetime
-import httpx
+from lib.catalogue import ensure_catalogue
+from routers.euphoria import router as euphoria_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -23,6 +23,7 @@ from lib.db import client, db
 # Startup runs before the yield, shutdown after it. Add your own setup/teardown here.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await ensure_catalogue(db)
     yield
     client.close()
 
@@ -43,35 +44,6 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
-class EuphoriaHealth(BaseModel):
-    ok: bool
-    service: str
-    timestamp: str
-
-class EuphoriaEvent(BaseModel):
-    id: int
-    category_id: int
-    name: str
-    slug: str
-    short_description: str | None = None
-    event_type: str
-    registration_type: str
-    fee: float
-    capacity: int
-    venue: str | None = None
-    status: str
-    category_name: str | None = None
-
-class EuphoriaEventsMeta(BaseModel):
-    programme: str
-
-class EuphoriaEventsResponse(BaseModel):
-    data: list[EuphoriaEvent]
-    meta: EuphoriaEventsMeta
-
-class EuphoriaEventResponse(BaseModel):
-    data: EuphoriaEvent
-
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -89,37 +61,7 @@ async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
-async def codeigniter_get(path: str) -> tuple[int, dict]:
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(f"http://localhost:3000/api/{path}")
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise HTTPException(status_code=502, detail="CodeIgniter returned an invalid response") from exc
-    return response.status_code, payload
-
-@api_router.get("/health", response_model=EuphoriaHealth)
-async def euphoria_health():
-    status, payload = await codeigniter_get("health")
-    if status != 200:
-        raise HTTPException(status_code=502, detail="Euphoria service unavailable")
-    return payload
-
-@api_router.get("/events", response_model=EuphoriaEventsResponse)
-async def euphoria_events():
-    status, payload = await codeigniter_get("events")
-    if status != 200:
-        raise HTTPException(status_code=502, detail="Euphoria events unavailable")
-    return payload
-
-@api_router.get("/events/{slug}", response_model=EuphoriaEventResponse)
-async def euphoria_event(slug: str):
-    status, payload = await codeigniter_get(f"events/{slug}")
-    if status == 404:
-        return JSONResponse(status_code=404, content=payload)
-    if status != 200:
-        raise HTTPException(status_code=502, detail="Euphoria event unavailable")
-    return payload
+api_router.include_router(euphoria_router)
 
 app.add_middleware(
     CORSMiddleware,

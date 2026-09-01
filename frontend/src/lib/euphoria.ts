@@ -5,8 +5,9 @@ export interface EuphoriaHealth {
 }
 
 export interface EuphoriaEvent {
-  id: number;
-  category_id: number;
+  id: string;
+  category_id: string;
+  category_name: string;
   name: string;
   slug: string;
   short_description: string | null;
@@ -14,9 +15,10 @@ export interface EuphoriaEvent {
   registration_type: string;
   fee: number;
   capacity: number;
-  venue: string | null;
+  venue: string;
   status: string;
-  category_name: string | null;
+  min_team_size: number | null;
+  max_team_size: number | null;
 }
 
 export interface EuphoriaEventsResponse {
@@ -26,4 +28,47 @@ export interface EuphoriaEventsResponse {
 
 export interface EuphoriaEventResponse {
   data: EuphoriaEvent;
+}
+
+export interface EuphoriaCategory {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface RegistrationCatalogueResponse {
+  categories: EuphoriaCategory[];
+  events: EuphoriaEvent[];
+}
+
+export interface RegistrationCreate {
+  category_id: string;
+  event_id: string;
+  name: string;
+  father_name: string | null;
+  email: string;
+  mobile: string;
+  age: number | null;
+  college: string;
+  city: string | null;
+  participant_affiliation: "sageian" | "non_sageian";
+  team_name: string | null;
+  team_members: string | null;
+}
+
+export interface RegistrationResponse {
+  registration_id: string;
+  participant_name: string;
+  event_id: string;
+  event_name: string;
+  category_name: string;
+  registration_type: "individual" | "team";
+  total_amount: number;
+  status: "pending_payment" | "confirmed";
+  created_at: string;
+}
+
+export interface PaymentInitiationResponse {
+  action: string;
+  fields: Record<string, string>;
 }

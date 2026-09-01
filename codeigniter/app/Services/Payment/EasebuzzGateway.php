@@ -17,8 +17,8 @@ final class EasebuzzGateway implements PaymentGatewayInterface
         $settings = new SettingsService();
         $this->key = $settings->value('EASEBUZZ_KEY', 'EASEBUZZ_KEY');
         $this->salt = $settings->value('EASEBUZZ_SALT', 'EASEBUZZ_SALT');
-        $this->environment = $settings->value('easebuzz_environment', 'EASEBUZZ_ENV', 'test');
-        $this->mode = $settings->value('payment_mode', 'PAYMENT_MODE', 'gateway');
+        $this->environment = $settings->value('easebuzz_environment', null, (string) env('EASEBUZZ_ENV', 'test'));
+        $this->mode = $settings->value('payment_mode', null, (string) env('PAYMENT_MODE', 'gateway'));
     }
 
     public function initiate(array $order): array

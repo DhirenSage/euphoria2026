@@ -28,5 +28,6 @@ class DatabaseSeeder extends Seeder
         $permissions=['events.view','events.create','events.edit','events.delete','registrations.view','registrations.edit','payments.view','payments.verify','attendance.view','attendance.scan','reports.export','users.manage'];
         $db->table('permissions')->insertBatch(array_map(fn($name)=>['name'=>$name,'description'=>ucwords(str_replace('.',' ',$name))],$permissions));
         $db->table('email_templates')->insert(['template_key'=>'event_pass','subject'=>'Euphoria 2026 – Your Event Registration is Confirmed','body_html'=>'Your registration is confirmed. Please keep the attached QR pass ready at the entry gate.','is_active'=>1,'created_at'=>$now,'updated_at'=>$now]);
+        $this->call('RegistrationCatalogueSeeder');
     }
 }

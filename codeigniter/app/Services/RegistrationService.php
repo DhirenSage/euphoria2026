@@ -19,7 +19,9 @@ final class RegistrationService
         $registrationId = $this->nextRegistrationId();
         $status = (float) $event['fee'] > 0 ? 'pending_payment' : 'confirmed';
         $now = date('Y-m-d H:i:s');
-        $row = ['event_id'=>$event['id'],'registration_id'=>$registrationId,'participant_name'=>trim($input['participant_name']),'email'=>strtolower(trim($input['email'])),'mobile'=>trim($input['mobile']),'college'=>trim($input['college'] ?? ''),'registration_type'=>$input['registration_type'] ?? 'individual','team_name'=>trim($input['team_name'] ?? ''),'total_amount'=>(float)$event['fee'],'status'=>$status,'qr_status'=>'active','created_at'=>$now,'updated_at'=>$now];
+        $registrationType = in_array($event['registration_type'], ['individual','team'], true) ? $event['registration_type'] : 'individual';
+        if ($registrationType === 'team' && trim($input['team_name'] ?? '') === '') throw new RuntimeException('Team name is required for this event.');
+        $row = ['event_id'=>$event['id'],'registration_id'=>$registrationId,'participant_name'=>trim($input['participant_name']),'father_name'=>trim($input['father_name'] ?? ''),'email'=>strtolower(trim($input['email'])),'mobile'=>trim($input['mobile']),'age'=>($input['age'] ?? '') !== '' ? (int)$input['age'] : null,'college'=>trim($input['college'] ?? ''),'city'=>trim($input['city'] ?? ''),'participant_affiliation'=>$input['participant_affiliation'],'registration_type'=>$registrationType,'team_name'=>$registrationType === 'team' ? trim($input['team_name'] ?? '') : null,'total_amount'=>(float)$event['fee'],'status'=>$status,'qr_status'=>'active','created_at'=>$now,'updated_at'=>$now];
         $this->db->table('registrations')->insert($row);
         $registrationDbId = (int) $this->db->insertID();
         $rawToken = 'EUPHORIA-' . bin2hex(random_bytes(20));

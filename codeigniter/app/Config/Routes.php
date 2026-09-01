@@ -23,6 +23,8 @@ $routes->group('api', static function ($routes) {
     $routes->get('events/(:segment)', 'ApiController::event/$1');
 });
 
+$routes->get('registration', 'RegistrationController::create');
+$routes->post('registration', 'RegistrationController::store');
 $routes->get('registration/(:segment)', 'RegistrationController::create/$1');
 $routes->post('registration/(:segment)', 'RegistrationController::store/$1');
 $routes->get('registration/success/(:segment)', 'RegistrationController::success/$1');

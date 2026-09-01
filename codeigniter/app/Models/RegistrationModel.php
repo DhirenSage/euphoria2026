@@ -8,7 +8,7 @@ class RegistrationModel extends Model
 {
     protected $table = 'registrations';
     protected $returnType = 'array';
-    protected $allowedFields = ['event_id','registration_id','participant_name','email','mobile','college','registration_type','team_name','total_amount','status','qr_status'];
+    protected $allowedFields = ['event_id','registration_id','participant_name','father_name','email','mobile','age','college','city','participant_affiliation','registration_type','team_name','total_amount','status','qr_status'];
     protected $useTimestamps = true;
 
     public function withEvent(): array

@@ -1,0 +1,6 @@
+import { Link } from "react-router-dom";
+import BrandLockup from "@/components/BrandLockup";
+
+export default function ScannerPreview() {
+  return <main className="scanner-shell"><header><BrandLockup variant="compact" /><Link to="/admin">Admin ↗</Link></header><section><p className="eyebrow accent">AUTHORIZED ENTRY / SCANNER</p><h1>Ready<br /><em>when you are.</em></h1><p>Choose the assigned event, day and gate before validating a secure QR pass.</p><div className="scanner-card"><label>Event<select defaultValue=""><option value="" disabled>Select assigned event</option><option>Move & Groove (Solo Dance Competition)</option></select></label><label>Event day<select defaultValue=""><option value="" disabled>Select day</option><option>Day 1</option></select></label><label>Gate<select defaultValue=""><option value="" disabled>Select gate</option><option>Gate 1 · Main Entry</option></select></label><button className="button button-yellow full">Open QR scanner ↗</button></div></section></main>;
+}
