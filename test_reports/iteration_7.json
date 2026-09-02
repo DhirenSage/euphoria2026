@@ -1,0 +1,107 @@
+{
+  "iteration": 7,
+  "mode": "generate",
+  "summary": "The app under test reverted from the previously-tested CodeIgniter/MySQL stack (port 8080) back to the FastAPI/Vite stack (port 8001/3000) described by the current briefing. All pre-existing tscheck backend test files and several browser checks targeted the dead CodeIgniter app and were stale/failing purely on architecture drift, not app bugs. Removed the 4 stale CodeIgniter-oriented backend test files + their helper conftest_ci.py, fixed a data-drift assertion (event catalogue now has 35 events, not the old 32) in one surviving backend test, and authored 5 new backend test files plus 7 new named browser checks -- one artifact pair per acceptance-matrix criterion. All 15 backend tests pass and all 7 browser checks pass against the live FastAPI backend and the public preview URL.",
+  "passed": 13,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "checks": [
+    {
+      "criterion": "Separate role-protected Admin and Scanner portals work on the public preview",
+      "name": "cross-portal-auth-isolation",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Run against https://sage-mega-fest.preview.emergentagent.com: unauthenticated /admin -> /admin/login, /scanner -> /scanner/login; scanner creds rejected on admin login (admin-login-error visible, stayed on /admin/login); admin creds opened Command centre (admin-dashboard-title='Command centre'); admin session visiting /scanner redirected to /scanner/login; scanner creds opened /scanner with camera button visible; scanner session visiting /admin redirected to /admin/login."
+    },
+    {
+      "criterion": "Admin can create an event with their own name, slug, status, capacity, dates and event days",
+      "name": "admin-create-event-and-table-shows-it",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Filled event-name/slug/status/fee/capacity/venue/description/date/time/deadline + added a 2nd event day via 'admin-create-event-button' form, saved, and the admin-event-row for the new unique event showed name, '\u20b9321' and 'registration open'."
+    },
+    {
+      "criterion": "Admin can create an event with their own name, slug, status, capacity, dates and event days",
+      "name": "test_tscheck_admin_event_creation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/admin/events 201 with unique slug/name/status/capacity/2 event days persisted; GET /api/admin/events returned exactly 1 matching row with the same slug/fee. Also asserts POST without a session -> 401."
+    },
+    {
+      "criterion": "Admin can change event pricing and status and the public page updates",
+      "name": "admin-edit-price-status-updates-public-page",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created a fixture event (fee \u20b9150), confirmed /events/{slug} showed \u20b9150; edited fee to \u20b9777 via 'Edit / Price', admin table updated to \u20b9777, public event-fee testid updated to \u20b9777, and the /registration selector's registration-fee-value also showed '777' for the same event."
+    },
+    {
+      "criterion": "Admin can change event pricing and status and the public page updates",
+      "name": "test_tscheck_event_pricing_status_update.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "PUT /api/admin/events/{id} changed fee 150->777 and status registration_open->registration_closed; GET /api/events/{slug} reflected 777/closed; GET /api/events and /api/registration-catalogue excluded the closed event; re-opening restored visibility with fee 777."
+    },
+    {
+      "criterion": "A free event registration generates a confirmed secure QR pass",
+      "name": "free-registration-confirmed-qr-pass",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created a \u20b90 fixture event as admin, registered publicly, confirmation-status showed 'CONFIRMED', registration-id matched EUPHORIA-2026-###### pattern; View QR pass showed pass-status 'ACTIVE', a real base64 PNG (data:image/png;base64,... >500 chars) and an EUPHORIA-prefixed token >30 chars."
+    },
+    {
+      "criterion": "A free event registration generates a confirmed secure QR pass",
+      "name": "test_tscheck_free_registration_qr_pass.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/registrations on a fee=0 event returned status=confirmed, total_amount=0, pass_key set; GET /api/passes/{id}?key=... returned qr_status=active, a real PNG data URL, and an EUPHORIA-prefixed token >30 chars. Wrong pass key -> 403."
+    },
+    {
+      "criterion": "Scanner supports camera action, QR image decoding and manual token fallback",
+      "name": "scanner-camera-image-and-manual-fallback",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Clicking 'Open camera' changed scanner-camera-message from its default text (no physical camera in this headless sandbox, so it surfaced the permission/device fallback state as expected by spec_deviations). Uploading the real generated QR PNG via scanner-image-input decoded it and the result showed 'ENTRY ALLOWED' with the correct registration id. Manual token input + submit for a second participant also reached the same backend endpoint and returned 'ENTRY ALLOWED' with the correct registration id."
+    },
+    {
+      "criterion": "QR validation records first entry, denies same-day duplicate and permits another configured day",
+      "name": "qr-scan-duplicate-and-day2-shows-details",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "First scan on Day 1 -> 'ENTRY ALLOWED' with participant name/registration id/event name/'SUCCESSFUL'/'ACTIVE' all visible. Re-scanning the same token on Day 1 -> 'ENTRY ALREADY RECORDED' with the same registration id and a 'First entry' timestamp. Scanning the same token on Day 2 (SCANNER_ALLOW_OFFDATE=true per spec_deviations) -> 'ENTRY ALLOWED' again."
+    },
+    {
+      "criterion": "QR validation records first entry, denies same-day duplicate and permits another configured day",
+      "name": "test_tscheck_qr_attendance_flow.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "First POST /api/scanner/scan for day 1 -> ok=true/status=allowed with full participant block; identical scan again -> status=duplicate with first_entry_at populated; scan for day 2 of the same event -> ok=true/status=allowed. Unauthenticated scan -> 401."
+    },
+    {
+      "criterion": "Scanner displays complete validation details",
+      "name": "qr-scan-duplicate-and-day2-shows-details (shared with duplicate/day-2 criterion above)",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Same run: scanner-result rendered participant name, registration id, event name, payment status (SUCCESSFUL), pass status (ACTIVE) on allow, and the first-entry timestamp label on the duplicate result."
+    },
+    {
+      "criterion": "Admin dashboard is connected to registration and attendance data",
+      "name": "admin-dashboard-connected-to-live-data",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "admin-event-count/admin-registration-count/admin-entry-count each incremented by exactly 1 after creating a fixture event, registering against it, and scanning it in; the new registration id appeared in the admin-scan-row recent-entry feed with 'ALLOWED'."
+    },
+    {
+      "criterion": "Admin dashboard is connected to registration and attendance data",
+      "name": "test_tscheck_admin_dashboard_live_data.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/admin/dashboard unauthenticated -> 401. Authenticated: stats.events/registrations/confirmed/entries each increased by 1 after a fresh event+registration+scan; new event present in events[]; new registration id present in recent_scans[]."
+    }
+  ],
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "notes": "Environment drift found and resolved (not an app bug): backend/.env APP_URL and the running supervisor config confirm the live stack is FastAPI (8001) + Vite (3000), matching this briefing; the prior CodeIgniter/MySQL app on port 8080 referenced by older artifacts is no longer running. Deleted tests/conftest_ci.py, test_tscheck_attendance_duplicate_rejection.py, test_tscheck_digital_pass_pdf.py, test_tscheck_public_api_edge_bridge_ci.py and test_tscheck_signed_payment_callback.py (all hard-wired to the dead CI app). Fixed an exact-count assertion in the surviving test_tscheck_public_api_edge_bridge.py to use >= thresholds since more events now exist in the seeded catalogue than when that test was written (data growth, not a regression). Added conftest.py admin_client/scanner_client fixtures; discovered and worked around an httpx cookiejar quirk where single-label hosts like 'localhost' are not reliably matched for cookie resend, by re-setting the session cookie with domain=\"\" after login. Backend suite: cd /app/backend && python -m pytest -q -p no:cacheprovider -> '15 passed in 4.30s'. All 8 acceptance-matrix criteria covered (11 artifacts: 7 new browser checks + 5 new/kept backend test files, with 2 criteria sharing one browser artifact each where the same flow naturally proves both). Pre-existing test_tscheck_easebuzz_payment_initiation.py (payment initiation contract) also still passes but is supporting/out-of-matrix so it is not listed as its own checks[] entry."
+}

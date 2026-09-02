@@ -6,6 +6,8 @@ import AdminPreview from "@/pages/AdminPreview";
 import ScannerPreview from "@/pages/ScannerPreview";
 import Events from "@/pages/Events";
 import EventDetail from "@/pages/EventDetail";
+import PortalLogin from "@/pages/PortalLogin";
+import EventPass from "@/pages/EventPass";
 
 // One <Route> per page in src/pages; BrowserRouter already wraps this in main.tsx.
 export default function App() {
@@ -17,7 +19,10 @@ export default function App() {
       <Route path="/registration" element={<Registration />} />
       <Route path="/registration/:eventSlug" element={<Registration />} />
       <Route path="/registration/success/:registrationId" element={<RegistrationSuccess />} />
+      <Route path="/pass/:registrationId" element={<EventPass />} />
+      <Route path="/admin/login" element={<PortalLogin portal="admin" />} />
       <Route path="/admin" element={<AdminPreview />} />
+      <Route path="/scanner/login" element={<PortalLogin portal="scanner" />} />
       <Route path="/scanner" element={<ScannerPreview />} />
     </Routes>
   );

@@ -45,3 +45,38 @@ async def aclient():
 
 
 # --- app-specific fixtures below this line ---
+
+ADMIN_EMAIL = "admin@euphoria.test"
+ADMIN_PASSWORD = "EuphoriaDemo!2026"
+SCANNER_EMAIL = "scanner@euphoria.test"
+SCANNER_PASSWORD = "ScannerDemo!2026"
+
+
+def _login_client(email: str, password: str, portal: str) -> httpx.Client:
+    c = httpx.Client(base_url=API_URL, timeout=30.0)
+    resp = c.post(f"/auth/{portal}/login", json={"email": email, "password": password})
+    assert resp.status_code == 200, f"{portal} login failed: {resp.status_code} {resp.text[:300]}"
+    # httpx's cookiejar treats the single-label host "localhost" oddly (stores it as
+    # "localhost.local"), so cookies set from the login response are not reliably resent
+    # by the jar on subsequent requests against the same "localhost" base_url. Re-set the
+    # session cookie explicitly (domain="" matches any host) so it is always attached.
+    token = resp.cookies.get("euphoria_session")
+    assert token, "login response did not set a session cookie"
+    c.cookies.set("euphoria_session", token, domain="", path="/")
+    return c
+
+
+@pytest.fixture
+def admin_client():
+    """httpx.Client with a live admin session cookie (cookies persist across requests)."""
+    c = _login_client(ADMIN_EMAIL, ADMIN_PASSWORD, "admin")
+    yield c
+    c.close()
+
+
+@pytest.fixture
+def scanner_client():
+    """httpx.Client with a live scanner session cookie."""
+    c = _login_client(SCANNER_EMAIL, SCANNER_PASSWORD, "scanner")
+    yield c
+    c.close()

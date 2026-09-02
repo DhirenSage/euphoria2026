@@ -1,4 +1,13 @@
-"""Authoritative EUPHORIA 2K26 registration catalogue for preview seeding."""
+"""Authoritative EUPHORIA 2K26 catalogue and development operations seed."""
+
+import base64
+import hashlib
+import os
+import secrets
+from datetime import datetime, timezone
+
+import bcrypt
+from cryptography.fernet import Fernet
 
 CATEGORIES = [
     {"id": "cultural", "name": "Cultural", "order": 1},
@@ -114,6 +123,11 @@ def build_event_document(event):
             {"time": "10:15 AM", "title": "Competition begins"},
             {"time": "05:30 PM", "title": "Results & recognition"},
         ],
+        "event_days": [
+            {"id": f"{slug}-day-1", "label": "Day 1", "date": "2026-09-15"},
+            {"id": f"{slug}-day-2", "label": "Day 2", "date": "2026-09-16"},
+            {"id": f"{slug}-day-3", "label": "Day 3", "date": "2026-09-17"},
+        ],
     }
 
 
@@ -125,5 +139,56 @@ async def ensure_catalogue(db) -> None:
         await db.euphoria_categories.update_one({"id": category["id"]}, {"$setOnInsert": {**category, "description": "EUPHORIA 2K26 event category", "is_active": True}}, upsert=True)
     for event in EVENT_DOCUMENTS:
         await db.euphoria_events.update_one({"id": event["id"]}, {"$setOnInsert": event}, upsert=True)
+        await db.euphoria_events.update_one(
+            {"id": event["id"], "event_days": {"$exists": False}},
+            {"$set": {"event_days": event["event_days"]}},
+        )
     await db.euphoria_events.create_index("id", unique=True)
+    await db.euphoria_events.create_index("slug", unique=True)
     await db.euphoria_registrations.create_index("registration_id", unique=True)
+    await db.euphoria_users.create_index("email", unique=True)
+    await db.euphoria_sessions.create_index("token_hash", unique=True)
+    await db.euphoria_sessions.create_index("expires_at", expireAfterSeconds=0)
+    await db.euphoria_attendance.create_index(
+        [("registration_id", 1), ("event_id", 1), ("event_day_id", 1)], unique=True
+    )
+
+    users = [
+        ("admin-demo", "EUPHORIA Super Admin", "admin@euphoria.test", "EuphoriaDemo!2026", "admin"),
+        ("scanner-demo", "Gate Scanner", "scanner@euphoria.test", "ScannerDemo!2026", "scanner"),
+    ]
+    event_ids = [event["id"] for event in await db.euphoria_events.find({}, {"id": 1}).to_list(1000)]
+    for user_id, name, email, password, role in users:
+        await db.euphoria_users.update_one(
+            {"email": email},
+            {"$setOnInsert": {
+                "id": user_id,
+                "name": name,
+                "email": email,
+                "password_hash": bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+                "role": role,
+                "is_active": True,
+                "assigned_event_ids": event_ids if role == "scanner" else [],
+                "created_at": datetime.now(timezone.utc),
+            }},
+            upsert=True,
+        )
+    await db.euphoria_users.update_one(
+        {"email": "scanner@euphoria.test"}, {"$set": {"assigned_event_ids": event_ids}}
+    )
+
+    secret = os.environ.get("PASS_SIGNING_SECRET", "")
+    if secret:
+        cipher = Fernet(base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest()))
+        async for registration in db.euphoria_registrations.find({"qr_token_hash": {"$exists": False}}):
+            token = f"EUPHORIA-{secrets.token_urlsafe(32)}"
+            access_key = secrets.token_urlsafe(32)
+            await db.euphoria_registrations.update_one(
+                {"_id": registration["_id"]},
+                {"$set": {
+                    "qr_token_hash": hashlib.sha256(token.encode()).hexdigest(),
+                    "qr_token_ciphertext": cipher.encrypt(token.encode()).decode(),
+                    "pass_key_hash": hashlib.sha256(access_key.encode()).hexdigest(),
+                    "qr_status": "active" if registration.get("status") == "confirmed" else "pending",
+                }},
+            )
