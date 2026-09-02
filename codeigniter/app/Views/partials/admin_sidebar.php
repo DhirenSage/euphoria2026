@@ -1,0 +1,17 @@
+<aside class="admin-sidebar" data-testid="admin-sidebar">
+  <a class="brand" href="<?= base_url('admin') ?>" data-testid="admin-brand-link"><span class="brand-mark">S</span><span>EUPHORIA <strong>OPS</strong></span></a>
+  <nav class="admin-nav" data-testid="admin-navigation">
+    <span class="eyebrow">COMMAND</span>
+    <a class="<?= ($active ?? '')==='dashboard'?'admin-nav-active':'' ?>" href="<?= base_url('admin') ?>" data-testid="admin-nav-dashboard">Overview</a>
+    <a class="<?= ($active ?? '')==='categories'?'admin-nav-active':'' ?>" href="<?= base_url('admin/categories') ?>" data-testid="admin-nav-categories">Categories</a>
+    <a class="<?= ($active ?? '')==='events'?'admin-nav-active':'' ?>" href="<?= base_url('admin/events') ?>" data-testid="admin-nav-events">Events</a>
+    <a class="<?= ($active ?? '')==='registrations'?'admin-nav-active':'' ?>" href="<?= base_url('admin/registrations') ?>" data-testid="admin-nav-registrations">Registrations</a>
+    <a class="<?= ($active ?? '')==='attendance'?'admin-nav-active':'' ?>" href="<?= base_url('admin/attendance') ?>" data-testid="admin-nav-attendance">Attendance</a>
+    <a class="<?= ($active ?? '')==='scanners'?'admin-nav-active':'' ?>" href="<?= base_url('admin/scanners') ?>" data-testid="admin-nav-scanners">Scanner access</a>
+    <a class="<?= ($active ?? '')==='reports'?'admin-nav-active':'' ?>" href="<?= base_url('admin/reports') ?>" data-testid="admin-nav-reports">Reports</a>
+    <span class="eyebrow nav-spacer">SYSTEM</span>
+    <a class="<?= ($active ?? '')==='settings'?'admin-nav-active':'' ?>" href="<?= base_url('admin/settings') ?>" data-testid="admin-nav-settings">Settings</a>
+    <a href="<?= base_url('scanner') ?>" data-testid="admin-nav-scanner">Scanner ↗</a>
+  </nav>
+  <form method="post" action="<?= base_url('logout') ?>" class="admin-logout-form"><input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>"><button type="submit" class="admin-logout" data-testid="admin-logout-link">Sign out</button></form>
+</aside>

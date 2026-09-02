@@ -8,7 +8,7 @@ class EventModel extends Model
 {
     protected $table = 'events';
     protected $returnType = 'array';
-    protected $allowedFields = ['category_id','name','slug','short_description','description','banner_path','thumbnail_path','event_type','registration_type','fee','capacity','min_team_size','max_team_size','registration_start','registration_end','event_start','event_end','venue','eligibility','rules','prizes','contact_details','status','is_featured'];
+    protected $allowedFields = ['category_id','name','slug','short_description','description','banner_path','thumbnail_path','event_type','registration_type','fee','payment_required','tax_amount','discount_amount','capacity','min_team_size','max_team_size','registration_start','registration_end','event_start','event_end','venue','eligibility','rules','prizes','refund_policy','contact_details','status','is_featured'];
     protected $useTimestamps = true;
 
     public function published(): array

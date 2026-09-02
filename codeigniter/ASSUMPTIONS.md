@@ -1,8 +1,12 @@
-# EUPHORIA platform assumptions
+# EUPHORIA 2026 assumptions
 
-- The authoritative application is CodeIgniter 4 on PHP 8.2 with MySQL 8-compatible InnoDB. The existing React/FastAPI skeleton remains separate because its supervisor entrypoint is read-only in this pod.
-- Easebuzz credentials are intentionally not stored in source. Production operators add `EASEBUZZ_KEY`, `EASEBUZZ_SALT`, `EASEBUZZ_ENV` and `PAYMENT_MODE=gateway` to the host environment. The admin settings screen explains this state instead of exposing secrets.
-- Payment callbacks are accepted only after reverse-hash verification. The client redirect is never treated as payment proof. The gateway adapter is ready, but no live credential is present in this workspace.
-- SMTP, PDF and QR service boundaries are implemented. A production queue worker should connect the command to the selected queue backend and Supervisor; a pass PDF is generated outside the public web root.
-- The demo seeder is development-only and uses fictional credentials and fictional participant data. Disable or remove demo seeding before production.
-- The first milestone includes the public programme/event journey, registration, confirmation/pass, admin operations and scanner attendance workflow. Advanced modules such as coupons, exports, speakers and certificate eligibility are represented by schema-ready boundaries but should be expanded in the next delivery phase.
+- The authoritative deliverable is CodeIgniter 4 on PHP 8.2+ with MySQL 8/InnoDB, HTTPS, and private writable storage. The Emergent public preview is not the PHP runtime.
+- EUPHORIA 2026 is the first programme. Categories, events, days, gates, registrations, payments, passes, and attendance retain programme/event relationships for future programmes.
+- Event passes are event-specific in V1. One participant may hold multiple independent event registrations, payments, QR tokens, and attendance histories.
+- A confirmed QR permits one entry per configured active event day. Production rejects off-date scanning; `SCANNER_ALLOW_OFFDATE` exists only for non-production acceptance testing.
+- Easebuzz `productinfo` is exactly `euphoria2026`. Browser redirects never confirm payments; only a verified callback/status result or an audited Finance/Super Admin manual verification can confirm them.
+- The signed callback fixture is non-production only, requires an authenticated admin session, and returns 404 in production.
+- Google Workspace SMTP uses STARTTLS on port 587. Confirmation queues one idempotent pass email; workers run outside the payment callback request.
+- Core participant fields are always collected. Event-specific fields are admin-configured; uploads accept only JPG, PNG, or PDF files up to 5 MB in private storage.
+- Camera scanning uses browser `BarcodeDetector` where available and always retains manual secure-token fallback.
+- Demo credentials and fictional seed data are development-only and must be removed before production.

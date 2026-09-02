@@ -5,6 +5,8 @@ $preselectedEventId = (int)(old('event_id') ?: ($routeEventId ?? 0));
 $preselectedCategoryId = (int)(old('category_id') ?: ($routeEventId ? $event['category_id'] : 0));
 $selectedEvent = null;
 foreach ($events as $candidate) if ((int)$candidate['id'] === $preselectedEventId) $selectedEvent = $candidate;
+$fieldsByEvent = [];
+foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $field;
 ?>
 <main class="page-shell registration-page">
   <section class="registration-compact-hero" data-testid="registration-page-header">
@@ -21,7 +23,7 @@ foreach ($events as $candidate) if ((int)$candidate['id'] === $preselectedEventI
     </div>
   </section>
 
-  <form method="post" action="<?= base_url('registration') ?>" class="registration-form registration-form-layout" data-testid="registration-form">
+  <form method="post" enctype="multipart/form-data" action="<?= base_url('registration') ?>" class="registration-form registration-form-layout" data-testid="registration-form">
     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
 
     <div class="registration-form-card">
@@ -104,12 +106,13 @@ foreach ($events as $candidate) if ((int)$candidate['id'] === $preselectedEventI
             <label>Team name <b>*</b>
               <input id="registration-team-name" name="team_name" value="<?= esc(old('team_name')) ?>" placeholder="Your team name" data-testid="registration-team-input">
             </label>
-            <label>Team member names <span class="label-muted">Optional now</span>
+            <label>Team member names <span class="label-muted">One per line</span>
               <textarea name="team_member_names" placeholder="One member per line" data-testid="registration-team-members-input"><?= esc(old('team_member_names')) ?></textarea>
             </label>
           </div>
           <p id="registration-team-size" class="team-size-note mono"></p>
         </div>
+        <div id="registration-custom-fields" class="registration-custom-fields" data-testid="registration-custom-fields"></div>
       </div>
     </div>
 
@@ -128,10 +131,11 @@ foreach ($events as $candidate) if ((int)$candidate['id'] === $preselectedEventI
         <span><b>✓</b> Unique registration ID</span>
         <span><b>✓</b> QR pass after confirmation</span>
       </div>
-      <label class="checkbox-label registration-consent"><input type="checkbox" required data-testid="registration-terms-checkbox"> <span>I agree to the event rules, privacy policy and refund terms.</span></label>
+      <label class="checkbox-label registration-consent"><input type="checkbox" name="terms" value="1" required data-testid="registration-terms-checkbox"> <span>I agree to the event rules, privacy policy and refund terms.</span></label>
       <button class="button button-yellow full-width" type="submit" data-testid="registration-submit-button">Continue to payment <span>↗</span></button>
       <p class="registration-support mono">NEED HELP? CONTACT THE EUPHORIA DESK</p>
     </aside>
   </form>
 </main>
 <script id="registration-events-data" type="application/json"><?= json_encode($events, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script id="registration-fields-data" type="application/json"><?= json_encode($fieldsByEvent, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

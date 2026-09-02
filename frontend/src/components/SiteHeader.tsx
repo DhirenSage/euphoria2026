@@ -8,7 +8,6 @@ export default function SiteHeader() {
       <nav className="site-nav" data-testid="main-navigation">
         <Link to="/events" data-testid="nav-events-link">Events</Link>
         <a href="/#categories" data-testid="nav-categories-link">Categories</a>
-        <Link to="/admin" data-testid="nav-admin-link">Admin</Link>
       </nav>
       <Link to="/registration" className="button button-yellow header-register" data-testid="nav-register-link">Register <span>↗</span></Link>
     </header>

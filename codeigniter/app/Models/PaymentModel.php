@@ -8,6 +8,6 @@ class PaymentModel extends Model
 {
     protected $table = 'payments';
     protected $returnType = 'array';
-    protected $allowedFields = ['registration_id','txnid','amount','gateway','gateway_order_id','gateway_payment_id','status','raw_reference','paid_at'];
+    protected $allowedFields = ['registration_id','txnid','amount','productinfo','gateway','gateway_order_id','gateway_payment_id','status','raw_reference','paid_at'];
     protected $useTimestamps = true;
 }

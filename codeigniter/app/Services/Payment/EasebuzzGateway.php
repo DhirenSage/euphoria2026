@@ -56,6 +56,18 @@ final class EasebuzzGateway implements PaymentGatewayInterface
         return isset($payload['hash']) && hash_equals(strtolower($expected), strtolower((string) $payload['hash']));
     }
 
+    public function signDevelopmentCallback(array $payload): array
+    {
+        if (ENVIRONMENT === 'production' || !filter_var(env('EASEBUZZ_ALLOW_SIGNED_CALLBACK_TEST', false), FILTER_VALIDATE_BOOL)) {
+            throw new RuntimeException('Signed callback fixtures are disabled.');
+        }
+        $payload['key'] = $this->key;
+        $fields = ['salt','status','udf10','udf9','udf8','udf7','udf6','udf5','udf4','udf3','udf2','udf1','email','firstname','productinfo','amount','txnid','key'];
+        $values = array_map(fn (string $field) => $field === 'salt' ? $this->salt : (string) ($payload[$field] ?? ''), $fields);
+        $payload['hash'] = hash('sha512', implode('|', $values));
+        return $payload;
+    }
+
     public function reconcile(string $txnid): array
     {
         if ($this->key === '' || $this->salt === '') throw new RuntimeException('Easebuzz is not configured');

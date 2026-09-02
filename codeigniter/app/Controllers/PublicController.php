@@ -23,8 +23,8 @@ class PublicController extends BaseController
     {
         $event = (new EventModel())->bySlug($slug);
         if (!$event) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        $days = db_connect()->table('event_days')->where('event_id',$event['id'])->orderBy('event_date','ASC')->get()->getResultArray();
-        $fields = db_connect()->table('registration_fields')->where('event_id',$event['id'])->orderBy('display_order','ASC')->get()->getResultArray();
+        $days = db_connect()->table('event_days')->where('event_id',$event['id'])->where('is_active',1)->orderBy('event_date','ASC')->get()->getResultArray();
+        $fields = db_connect()->table('registration_fields')->where('event_id',$event['id'])->where('is_active',1)->orderBy('display_order','ASC')->get()->getResultArray();
         return $this->render('public/event', compact('event','days','fields') + ['title'=>$event['name'].' | EUPHORIA']);
     }
 

@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Services\AuditService;
 use App\Services\Payment\EasebuzzGateway;
+use App\Services\PaymentConfirmationService;
+use RuntimeException;
 
 class PaymentController extends BaseController
 {
@@ -15,8 +17,9 @@ class PaymentController extends BaseController
         if ($registration['status'] === 'confirmed') return redirect()->to('/registration/success/'.$registrationCode);
         try {
             $transactionId='EB-'.bin2hex(random_bytes(12));
-            $result = (new EasebuzzGateway())->initiate(['txnid'=>$transactionId,'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026'),'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
-            $db->table('payments')->where('registration_id',$registration['id'])->whereIn('status',['created','pending','initiated'])->update(['txnid'=>$transactionId,'status'=>'initiated','gateway_order_id'=>$result['access_key'],'updated_at'=>date('Y-m-d H:i:s')]);
+            $productinfo=(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026');
+            $result = (new EasebuzzGateway())->initiate(['txnid'=>$transactionId,'amount'=>number_format((float)$registration['total_amount'],2,'.',''),'firstname'=>$registration['participant_name'],'email'=>$registration['email'],'phone'=>$registration['mobile'],'productinfo'=>$productinfo,'surl'=>base_url('payments/easebuzz/callback'),'furl'=>base_url('payments/easebuzz/callback'),'udf1'=>$registrationCode]);
+            $db->table('payments')->where('registration_id',$registration['id'])->whereIn('status',['created','pending','initiated'])->update(['txnid'=>$transactionId,'productinfo'=>$productinfo,'status'=>'initiated','gateway_order_id'=>$result['access_key'],'updated_at'=>date('Y-m-d H:i:s')]);
             return redirect()->to($result['checkout_url']);
         } catch (\RuntimeException $e) {
             return $this->render('payments/unavailable',['registration'=>$registration,'message'=>$e->getMessage(),'title'=>'Payment setup required']);
@@ -26,20 +29,13 @@ class PaymentController extends BaseController
     public function callback()
     {
         $payload = $this->request->getPost() ?: $this->request->getGet();
-        if (!(new EasebuzzGateway())->verifyCallback($payload)) {
-            (new AuditService())->record('payment.invalid_signature','payments',(string)($payload['txnid'] ?? null));
-            return $this->response->setStatusCode(400)->setBody('Invalid payment callback');
+        try {
+            $result=(new PaymentConfirmationService())->handle($payload);
+            return redirect()->to('/registration/success/'.$result['registration_id']);
+        } catch (RuntimeException $e) {
+            (new AuditService())->record('payment.callback_rejected','payments',(string)($payload['txnid'] ?? null),['reason'=>$e->getMessage()]);
+            return $this->response->setStatusCode(400)->setBody('Payment verification failed');
         }
-        $payment = db_connect()->table('payments')->where('txnid',$payload['txnid'])->get()->getRowArray();
-        if (!$payment) return $this->response->setStatusCode(404)->setBody('Payment not found');
-        $status = strtolower((string)($payload['status'] ?? 'unknown')) === 'success' ? 'success' : 'failed';
-        db_connect()->table('payments')->where('id',$payment['id'])->whereIn('status',['created','pending','initiated','unknown'])->update(['status'=>$status,'gateway_payment_id'=>$payload['easepayid'] ?? null,'raw_reference'=>json_encode(['status'=>$payload['status'] ?? null]),'paid_at'=>$status==='success'?date('Y-m-d H:i:s'):null,'updated_at'=>date('Y-m-d H:i:s')]);
-        if ($status === 'success') {
-            db_connect()->table('registrations')->where('id',$payment['registration_id'])->update(['status'=>'confirmed','updated_at'=>date('Y-m-d H:i:s')]);
-            (new \App\Services\EmailQueueService())->enqueue((int)$payment['registration_id']);
-        }
-        return redirect()->to('/registration/success/'.$this->registrationCode((int)$payment['registration_id']));
     }
 
-    private function registrationCode(int $id): string { return (string)db_connect()->table('registrations')->select('registration_id')->where('id',$id)->get()->getRow('registration_id'); }
 }

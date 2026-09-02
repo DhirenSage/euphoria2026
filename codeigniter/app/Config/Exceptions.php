@@ -10,7 +10,7 @@ use Throwable;
 
 class Exceptions extends BaseConfig
 {
-    public string $errorViewPath = APPPATH . 'Views/errors';
+    public string $errorViewPath = ROOTPATH . 'vendor/codeigniter4/framework/app/Views/errors';
     public bool $log = true;
     public array $ignoreCodes = [404];
     public bool $logDeprecations = true;

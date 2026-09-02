@@ -3,10 +3,10 @@
     <?= view('partials/official_logos', ['variant'=>'pass']) ?>
     <span class="eyebrow accent">DIGITAL EVENT PASS</span>
     <h1>Show up<br><em>bright.</em></h1>
-    <a href="javascript:window.print()" class="text-link" data-testid="print-pass-button">Print / save pass ↗</a>
+    <div class="pass-actions"><button type="button" class="text-link print-pass-trigger" data-testid="print-pass-button">Print / save pass ↗</button><a href="<?= base_url('pass/'.$registration['registration_id'].'/download').($passAccess!==''?'?key='.rawurlencode($passAccess):'') ?>" class="text-link" data-testid="download-pass-button">Download PDF ↓</a></div>
   </div>
   <div class="pass-card" data-testid="digital-pass-card">
-    <div class="pass-card-top"><div><?= view('partials/official_logos', ['variant'=>'pass-card']) ?></div><span class="pass-stamp">ACTIVE</span></div>
+    <div class="pass-card-top"><div><?= view('partials/official_logos', ['variant'=>'pass-card']) ?></div><span class="pass-stamp" data-testid="pass-status">ACTIVE</span></div>
     <div class="pass-card-event"><span class="eyebrow">EVENT</span><strong><?= esc($registration['event_name']) ?></strong><span><?= esc($registration['category_name']) ?></span></div>
     <div class="pass-card-details">
       <div><span class="eyebrow">PASS HOLDER</span><strong><?= esc($registration['participant_name']) ?></strong></div>

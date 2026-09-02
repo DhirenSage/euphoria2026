@@ -17,7 +17,7 @@
     <nav class="main-nav" data-testid="main-navigation">
         <a href="<?= base_url('events') ?>" data-testid="nav-events-link">Events</a><a href="<?= base_url('gallery') ?>" data-testid="nav-gallery-link">Gallery</a><a href="<?= base_url('about-euphoria') ?>" data-testid="nav-about-link">About</a>
     </nav>
-    <div class="header-actions"><a class="text-link" href="<?= base_url('login') ?>" data-testid="nav-login-link">Admin <span>↗</span></a><a class="button button-yellow button-small" href="<?= base_url('registration') ?>" data-testid="nav-register-link">Register <span>↗</span></a></div>
+    <div class="header-actions"><a class="button button-yellow button-small" href="<?= base_url('registration') ?>" data-testid="nav-register-link">Register <span>↗</span></a></div>
 </header>
 <?php if ($message = session('message')): ?><div class="flash flash-success" data-testid="flash-success"><?= esc($message) ?></div><?php endif ?>
 <?php if ($error = session('error')): ?><div class="flash flash-error" data-testid="flash-error"><?= esc($error) ?></div><?php endif ?>

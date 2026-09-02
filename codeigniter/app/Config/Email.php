@@ -2,9 +2,9 @@
 
 namespace Config;
 
-use CodeIgniter\Config\Email as BaseEmail;
+use CodeIgniter\Config\BaseConfig;
 
-class Email extends BaseEmail
+class Email extends BaseConfig
 {
     public string $protocol = 'smtp';
     public string $SMTPHost = '';
@@ -14,7 +14,7 @@ class Email extends BaseEmail
     public string $SMTPCrypto = 'tls';
     public string $mailType = 'html';
     public string $charset = 'UTF-8';
-    public string $wordWrap = 'true';
+    public bool $wordWrap = true;
     public string $fromEmail = '';
     public string $fromName = 'EUPHORIA 2026';
 }

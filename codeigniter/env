@@ -27,6 +27,12 @@ email.SMTPPort = 587
 email.SMTPCrypto = tls
 email.fromEmail = noreply@example.com
 email.fromName = 'EUPHORIA 2026'
+EASEBUZZ_ALLOW_SIGNED_CALLBACK_TEST = false
+SCANNER_ALLOW_OFFDATE = false
+
+cookie.secure = true
+cookie.httponly = true
+cookie.samesite = Lax
 
 app.forceGlobalSecureRequests = false
 encryption.key =

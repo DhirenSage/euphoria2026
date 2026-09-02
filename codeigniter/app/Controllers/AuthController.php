@@ -2,20 +2,24 @@
 
 namespace App\Controllers;
 
-use App\Models\UserModel;
+use App\Services\AuthenticationService;
+use RuntimeException;
 
 class AuthController extends BaseController
 {
+    private const ADMIN_ROLES = ['SUPER_ADMIN','PROGRAMME_ADMIN','EVENT_ADMIN','FINANCE','CONTENT_MANAGER','REPORT_VIEWER'];
+
     public function login() { return $this->render('auth/login', ['title'=>'Admin sign in']); }
 
     public function attempt()
     {
-        $user = (new UserModel())->withRolesByEmail((string)$this->request->getPost('email'));
-        if (!$user || !password_verify((string)$this->request->getPost('password'), $user['password_hash'])) return redirect()->back()->withInput()->with('error','Email or password is incorrect.');
-        session()->regenerate(true);
-        session()->set(['user_id'=>$user['id'],'user_name'=>$user['name'],'roles'=>$user['roles']]);
-        return redirect()->to(in_array('SCANNER',$user['roles'],true) ? '/scanner' : '/admin');
+        try {
+            (new AuthenticationService())->authenticate((string)$this->request->getPost('email'),(string)$this->request->getPost('password'),self::ADMIN_ROLES,'admin');
+            return redirect()->to('/admin');
+        } catch (RuntimeException $e) {
+            return redirect()->back()->withInput()->with('error',$e->getMessage());
+        }
     }
 
-    public function logout() { session()->destroy(); return redirect()->to('/')->with('message','You have been signed out.'); }
+    public function logout() { session()->destroy(); return redirect()->to('/admin/login')->with('message','You have been signed out.'); }
 }

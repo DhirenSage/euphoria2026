@@ -7,5 +7,6 @@
   <p>Your registration for <strong><?= esc($registration['event_name']) ?></strong> is confirmed.</p>
   <p>Registration ID: <strong><?= esc($registration['registration_id']) ?></strong><br>Venue: <?= esc($registration['venue'] ?: 'SAGE University Indore') ?></p>
   <p>Your digital pass is attached. Please keep its QR code ready at the entry gate.</p>
+  <p><a href="<?= esc($passUrl) ?>" style="display:inline-block;background:#eab308;color:#111;padding:12px 18px;text-decoration:none;font-weight:bold">View secure digital pass</a></p>
   <p>SAGE University Indore</p>
 </div>

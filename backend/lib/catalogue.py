@@ -122,8 +122,8 @@ EVENT_DOCUMENTS = [build_event_document(event) for event in EVENTS]
 
 async def ensure_catalogue(db) -> None:
     for category in CATEGORIES:
-        await db.euphoria_categories.update_one({"id": category["id"]}, {"$set": category}, upsert=True)
+        await db.euphoria_categories.update_one({"id": category["id"]}, {"$setOnInsert": {**category, "description": "EUPHORIA 2K26 event category", "is_active": True}}, upsert=True)
     for event in EVENT_DOCUMENTS:
-        await db.euphoria_events.update_one({"id": event["id"]}, {"$set": event}, upsert=True)
+        await db.euphoria_events.update_one({"id": event["id"]}, {"$setOnInsert": event}, upsert=True)
     await db.euphoria_events.create_index("id", unique=True)
     await db.euphoria_registrations.create_index("registration_id", unique=True)
