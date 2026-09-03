@@ -97,7 +97,7 @@ class RegistrationResponse(BaseModel):
     category_name: str
     registration_type: Literal["individual", "team"]
     total_amount: float
-    status: Literal["pending_payment", "confirmed"]
+    status: Literal["pending_payment", "confirmed", "cancelled"]
     created_at: datetime
     payment_status: str = "created"
     qr_ready: bool = False
@@ -118,7 +118,7 @@ class SessionUser(BaseModel):
     id: str
     name: str
     email: str
-    role: Literal["admin", "scanner"]
+    role: Literal["admin", "event_admin", "finance", "scanner", "report_viewer"]
 
 
 class EventDayInput(BaseModel):
@@ -169,7 +169,103 @@ class AdminDashboardResponse(BaseModel):
 
 
 class AdminRegistrationsResponse(BaseModel):
-    data: list[RegistrationResponse]
+    data: list["AdminRegistrationRow"]
+
+
+class AttendanceSummary(BaseModel):
+    event_day_id: str
+    event_day_label: str
+    gate: str
+    entry_at: datetime
+
+
+class AdminRegistrationRow(BaseModel):
+    registration_id: str
+    participant_name: str
+    email: str
+    mobile: str
+    college: str
+    event_id: str
+    event_name: str
+    category_name: str
+    registration_type: str
+    total_amount: float
+    status: str
+    payment_status: str
+    qr_status: str
+    created_at: datetime
+    attendance: list[AttendanceSummary] = []
+
+
+class ParticipantUpdate(BaseModel):
+    participant_name: str = Field(min_length=2, max_length=160)
+    email: str = Field(pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$", max_length=190)
+    mobile: str = Field(pattern=r"^[6-9][0-9]{9}$")
+    college: str = Field(min_length=2, max_length=180)
+
+
+class QrStateRequest(BaseModel):
+    action: Literal["revoke", "restore", "cancel", "restore_registration"]
+
+
+class PaymentAdminRow(BaseModel):
+    payment_ref: str
+    registration_id: str
+    participant_name: str
+    masked_email: str
+    event_name: str
+    amount: float
+    state: str
+    txnid: str
+    gateway_payment_id: str | None = None
+    attempts: list[dict] = []
+    updated_at: datetime
+
+
+class AdminPaymentsResponse(BaseModel):
+    data: list[PaymentAdminRow]
+
+
+class ManualVerificationRequest(BaseModel):
+    reason: str = Field(min_length=10, max_length=1000)
+    transaction_reference: str = Field(min_length=2, max_length=200)
+
+
+class StaffCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    email: str = Field(pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$", max_length=190)
+    password: str = Field(min_length=12, max_length=128)
+    role: Literal["admin", "event_admin", "finance", "scanner", "report_viewer"]
+
+
+class StaffUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    role: Literal["admin", "event_admin", "finance", "scanner", "report_viewer"]
+    is_active: bool
+    password: str | None = Field(default=None, min_length=12, max_length=128)
+
+
+class ScannerAssignmentInput(BaseModel):
+    event_id: str
+    event_day_ids: list[str] = Field(min_length=1)
+    gates: list[str] = Field(min_length=1)
+
+
+class StaffRow(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: str
+    is_active: bool
+    assignments: list[dict] = []
+    created_at: datetime
+
+
+class AdminStaffResponse(BaseModel):
+    data: list[StaffRow]
+
+
+AdminRegistrationsResponse.model_rebuild()
 
 
 class PassResponse(BaseModel):
@@ -189,6 +285,7 @@ class ScannerContextResponse(BaseModel):
     events: list[EuphoriaEvent]
     gates: list[str]
     demo_mode: bool
+    assignments: list[dict] = []
 
 
 class ScanRequest(BaseModel):

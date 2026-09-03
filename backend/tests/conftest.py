@@ -80,3 +80,53 @@ def scanner_client():
     c = _login_client(SCANNER_EMAIL, SCANNER_PASSWORD, "scanner")
     yield c
     c.close()
+
+
+def unique_suffix() -> str:
+    import secrets as _secrets
+    return _secrets.token_hex(6)
+
+
+def make_event(admin_client: httpx.Client, fee: float = 0.0, days: int = 1, **overrides) -> dict:
+    """Create a tscheck- fixture event via the real admin API and return the created event dict."""
+    suffix = unique_suffix()
+    event_days = [{"label": f"Day {i + 1}", "date": f"2026-09-{15 + i:02d}"} for i in range(days)]
+    payload = {
+        "category_id": "cultural",
+        "name": f"tscheck-event-{suffix}",
+        "slug": f"tscheck-event-{suffix}",
+        "short_description": "Automated fixture event.",
+        "description": "Automated fixture event for backend test isolation.",
+        "event_type": "competition",
+        "registration_type": "individual",
+        "fee": fee,
+        "capacity": 100,
+        "venue": "Test Venue",
+        "status": "registration_open",
+        "event_date": "15 September 2026",
+        "event_time": "10:00 AM - 6:00 PM",
+        "registration_deadline": "14 September 2026 . 11:59 PM",
+        "event_days": event_days,
+    }
+    payload.update(overrides)
+    resp = admin_client.post("/admin/events", json=payload)
+    assert resp.status_code == 201, f"event creation failed: {resp.status_code} {resp.text[:300]}"
+    return resp.json()
+
+
+def register_for_event(client: httpx.Client, event: dict, **overrides) -> dict:
+    """Create a tscheck- fixture registration for the given event via the public API."""
+    suffix = unique_suffix()
+    payload = {
+        "category_id": event["category_id"],
+        "event_id": event["id"],
+        "name": f"tscheck participant {suffix}",
+        "email": f"tscheck.{suffix}@example.test",
+        "mobile": "9876543210",
+        "college": "tscheck College",
+        "participant_affiliation": "non_sageian",
+    }
+    payload.update(overrides)
+    resp = client.post("/registrations", json=payload)
+    assert resp.status_code == 201, f"registration creation failed: {resp.status_code} {resp.text[:300]}"
+    return resp.json()

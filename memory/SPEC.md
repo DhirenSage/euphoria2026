@@ -14,6 +14,10 @@ The active public preview now provides a real database-connected operations flow
 
 Every registration receives a random pass-access key and encrypted unpredictable QR token. Free registrations activate immediately; paid registrations activate only after verified Easebuzz callback or an audited Admin complimentary/manual confirmation. `/pass/{registration-id}` renders the real QR from the protected pass API. Scanner camera decoding uses `html5-qrcode`, with QR-image upload and manual token fallbacks. The scan API checks role, assignment, event, configured day, payment, registration, and QR status before an atomic unique attendance insert; duplicate and denied attempts feed the Admin dashboard.
 
+Operations now include role-based staff accounts (`admin`, `event_admin`, `finance`, `scanner`, `report_viewer`), active/deactivated state, and event/day/gate scanner assignments enforced by the scan API. Finance users can filter payment states, review masked participant/payment data, initiate a fresh Easebuzz retry transaction, or manually verify with a mandatory reference and reason; every override is audited. Participant controls cover profile correction, cancellation/restoration, immediate QR revoke/restore, attendance history, and real SMTP pass resend with a rotated secure pass-access key.
+
+The scanner includes success/error sound, vibration, camera torch capability checks, and fullscreen controls. Hardware-dependent controls degrade to clear fallback messages while QR image upload and manual token verification remain available.
+
 Every event card links to `/events/{event-slug}`. Event records include a banner, full description, date/time, deadline, venue, eligibility, fee, capacity, registration/team configuration, schedule, rules, prizes, and coordinator details. The detail-page Register Now CTA opens the shared registration form with that event preselected.
 
 ## Roles

@@ -152,6 +152,8 @@ async def ensure_catalogue(db) -> None:
     await db.euphoria_attendance.create_index(
         [("registration_id", 1), ("event_id", 1), ("event_day_id", 1)], unique=True
     )
+    await db.euphoria_payment_events.create_index("event_key", unique=True)
+    await db.euphoria_registrations.create_index("payment.attempts.txnid", unique=True, sparse=True)
 
     users = [
         ("admin-demo", "EUPHORIA Super Admin", "admin@euphoria.test", "EuphoriaDemo!2026", "admin"),
@@ -174,7 +176,7 @@ async def ensure_catalogue(db) -> None:
             upsert=True,
         )
     await db.euphoria_users.update_one(
-        {"email": "scanner@euphoria.test"}, {"$set": {"assigned_event_ids": event_ids}}
+        {"email": "scanner@euphoria.test"}, {"$set": {"assigned_event_ids": event_ids}, "$setOnInsert": {"assignments": []}}
     )
 
     secret = os.environ.get("PASS_SIGNING_SECRET", "")

@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import BrandLockup from "@/components/BrandLockup";
 import { apiGet } from "@/lib/api";
 import type { PassResponse } from "@/lib/euphoria";
 
 export default function EventPass() {
   const { registrationId = "" } = useParams();
-  const key = sessionStorage.getItem(`euphoria-pass-${registrationId}`) ?? "";
+  const [search] = useSearchParams();
+  const queryKey = search.get("key") ?? "";
+  if (queryKey) sessionStorage.setItem(`euphoria-pass-${registrationId}`, queryKey);
+  const key = queryKey || sessionStorage.getItem(`euphoria-pass-${registrationId}`) || "";
   const { data, isLoading, isError } = useQuery({
     queryKey: ["pass", registrationId, key],
     queryFn: () => apiGet<PassResponse>(`/passes/${registrationId}?key=${encodeURIComponent(key)}`),

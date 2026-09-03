@@ -82,7 +82,7 @@ export interface RegistrationResponse {
   category_name: string;
   registration_type: "individual" | "team";
   total_amount: number;
-  status: "pending_payment" | "confirmed";
+  status: "pending_payment" | "confirmed" | "cancelled";
   created_at: string;
   payment_status: string;
   qr_ready: boolean;
@@ -98,7 +98,7 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "scanner";
+  role: "admin" | "event_admin" | "finance" | "scanner" | "report_viewer";
 }
 
 export interface LoginRequest {
@@ -160,7 +160,64 @@ export interface AdminDashboardResponse {
 }
 
 export interface AdminRegistrationsResponse {
-  data: RegistrationResponse[];
+  data: AdminRegistrationRow[];
+}
+
+export interface AdminRegistrationRow {
+  registration_id: string;
+  participant_name: string;
+  email: string;
+  mobile: string;
+  college: string;
+  event_id: string;
+  event_name: string;
+  category_name: string;
+  registration_type: string;
+  total_amount: number;
+  status: string;
+  payment_status: string;
+  qr_status: string;
+  created_at: string;
+  attendance: Array<{ event_day_id: string; event_day_label: string; gate: string; entry_at: string }>;
+}
+
+export interface ParticipantUpdate {
+  participant_name: string;
+  email: string;
+  mobile: string;
+  college: string;
+}
+
+export interface PaymentAdminRow {
+  payment_ref: string;
+  registration_id: string;
+  participant_name: string;
+  masked_email: string;
+  event_name: string;
+  amount: number;
+  state: string;
+  txnid: string;
+  gateway_payment_id: string | null;
+  attempts: Array<{ txnid: string; status: string; created_at: string }>;
+  updated_at: string;
+}
+
+export interface AdminPaymentsResponse {
+  data: PaymentAdminRow[];
+}
+
+export interface StaffRow {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "event_admin" | "finance" | "scanner" | "report_viewer";
+  is_active: boolean;
+  assignments: Array<{ event_id: string; event_day_ids: string[]; gates: string[] }>;
+  created_at: string;
+}
+
+export interface AdminStaffResponse {
+  data: StaffRow[];
 }
 
 export interface PassResponse {
@@ -180,6 +237,7 @@ export interface ScannerContextResponse {
   events: EuphoriaEvent[];
   gates: string[];
   demo_mode: boolean;
+  assignments: Array<{ event_id: string; event_day_ids: string[]; gates: string[] }>;
 }
 
 export interface ScanRequest {

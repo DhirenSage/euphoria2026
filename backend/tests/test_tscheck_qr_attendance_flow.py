@@ -82,6 +82,15 @@ def test_attendance_allows_first_scan_denies_duplicate_and_allows_next_day(admin
     day1_id, day2_id = event["event_days"][0]["id"], event["event_days"][1]["id"]
     participant = _register_and_get_token(admin_client, client, event, suffix)
 
+    # Scanner assignments are now enforced by event/day/gate (per the current
+    # acceptance matrix) -- assign the demo scanner to this fixture event/both
+    # days/gate before exercising the scan flow.
+    assign_resp = admin_client.post(
+        "/admin/staff/scanner-demo/assignments",
+        json={"event_id": event["id"], "event_day_ids": [day1_id, day2_id], "gates": [GATE]},
+    )
+    assert assign_resp.status_code == 200, assign_resp.text
+
     first_scan = scanner_client.post(
         "/scanner/scan",
         json={"token": participant["token"], "event_id": event["id"], "event_day_id": day1_id, "gate": GATE},

@@ -1,0 +1,112 @@
+{
+  "iteration": 8,
+  "mode": "generate",
+  "summary": "New briefing shifted the acceptance matrix to 8 operations-portal criteria (staff/role management, scanner assignment enforcement, payment reconciliation, participant management, QR revoke/restore, pass resend, scanner feedback controls, and QR-image scan + duplicate detection). Authored 6 new backend pytest files and 8 new named browser checks -- one artifact pair per API-bearing criterion, one browser-only check where no distinct API assertion was needed beyond what other files already cover. Fixed two pre-existing backend test files (test_tscheck_admin_dashboard_live_data.py, test_tscheck_qr_attendance_flow.py) that started failing because the demo scanner account now has no assignments under the newly-enforced assignment model -- added an admin assignment call before scanning so they exercise the same flow the app now requires; this is a legitimate spec-drift fix, not an app bug. All 27 backend tests pass and all 8 new browser checks pass against the live FastAPI backend and the public preview URL (one check run via APP_URL). Removed stray .backup files left in the checks directory.",
+  "passed": 14,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "checks": [
+    {
+      "criterion": "Super Admin can create and manage role-based staff accounts",
+      "name": "staff-management-create-and-toggle",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Run against public preview /admin/login: created an event_admin fixture staff account, its row showed 'event admin' role, no password value ever rendered on the page, Deactivate toggled the row to Activate and back to Deactivate."
+    },
+    {
+      "criterion": "Super Admin can create and manage role-based staff accounts",
+      "name": "test_tscheck_staff_management.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/admin/staff 201 for scanner/event_admin/finance/report_viewer/admin roles, no password_hash/password in any response; GET /api/admin/staff listing also excludes password fields; PUT toggling is_active persists both ways; non-admin GET /api/admin/staff -> 403."
+    },
+    {
+      "criterion": "Scanner assignments are enforced by event, day and gate",
+      "name": "scanner-sees-only-assigned-event-day-gate",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged in as ops.scanner.1788414836136@example.test on /scanner/login: event dropdown contains exactly 'Ops UI Event 1788414836136', day dropdown contains exactly 1 day (Day 1), gate dropdown contains exactly 'Gate 1 · Main Entry'."
+    },
+    {
+      "criterion": "Scanner assignments are enforced by event, day and gate",
+      "name": "test_tscheck_scanner_assignment_enforcement.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Own fixture scanner assigned to fixture event/day-1/Gate-1 only: GET /api/scanner/context returns exactly that event/day/gate; scan on assigned day/gate -> allowed; scan on the event's unassigned day-2 -> denied; scan on unassigned Gate 2 -> denied."
+    },
+    {
+      "criterion": "Payment reconciliation shows real server states and supports audited manual verification",
+      "name": "payment-reconciliation-verify-and-block-conflict",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created a paid fixture event+registration, it appeared under the 'created' state filter, Verify + manual reference/reason confirmed it into 'manual verified' state, and after verification the Retry/Verify buttons are removed from that row (already-verified retry/verify blocked in the UI)."
+    },
+    {
+      "criterion": "Payment reconciliation shows real server states and supports audited manual verification",
+      "name": "test_tscheck_payment_reconciliation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Own fixture paid registration visible under state=created filter; POST /api/admin/payments/{id}/verify with a too-short reference/reason -> 422; valid payload -> 200 manual_verified, visible under state=manual_verified filter; retrying verify on the same id -> 409. Scanner role GET /api/admin/payments -> 403."
+    },
+    {
+      "criterion": "Participant management edits participant data and controls registration state",
+      "name": "participant-edit-and-cancel-restore",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Own fixture free registration: Edit form updated participant name and the row reflected it; Cancel flipped status to 'cancelled'; Restore returned it to 'confirmed'."
+    },
+    {
+      "criterion": "Participant management edits participant data and controls registration state",
+      "name": "test_tscheck_participant_management.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "PUT /api/admin/registrations/{id} updates name/email/mobile/college and is reflected in GET /api/admin/registrations; POST .../state action=cancel -> status cancelled; action=restore_registration on a paid/free row -> confirmed; the same restore action on an unpaid registration -> 409 (payment remains authoritative)."
+    },
+    {
+      "criterion": "QR revoke and restore take effect immediately",
+      "name": "qr-revoke-restore-immediate-effect",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Own fixture confirmed registration: pass column read 'active', Revoke QR flipped it to 'revoked', Restore QR flipped it back to 'active' -- both visible only to the admin/event_admin role viewing the page."
+    },
+    {
+      "criterion": "QR revoke and restore take effect immediately",
+      "name": "test_tscheck_qr_revoke_restore.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "First scan on an own fixture pass -> allowed; POST state action=revoke then a scan on a second own fixture (revoked) -> denied; action=restore -> qr_ready true, GET /api/passes returns the identical qr_token (token not rotated by restore), and a scan after restore -> allowed."
+    },
+    {
+      "criterion": "Pass resend uses real SMTP and rotates secure access",
+      "name": "pass-resend-visible-and-succeeds",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Own fixture confirmed registration: Resend pass button visible, click produced the 'Pass email sent successfully.' success banner (real SMTP send through the configured provider)."
+    },
+    {
+      "criterion": "Pass resend uses real SMTP and rotates secure access",
+      "name": "test_tscheck_pass_resend.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/admin/registrations/{id}/resend-pass -> 200 ok=true via the real configured SMTP host; the previous pass_key is rotated (old key lookup on /api/passes -> 403); resend on an unconfirmed (pending_payment) registration -> 409; resend by scanner role -> 403."
+    },
+    {
+      "criterion": "Scanner provides sound, vibration, torch capability feedback and fullscreen",
+      "name": "scanner-feedback-controls-and-fullscreen",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Sound/Torch/Fullscreen controls all visible on /scanner; Sound button label toggled on click; Torch button clicked without throwing (headless sandbox has no physical camera per spec_deviations, so it surfaces its capability/open-camera fallback state); Fullscreen button clicked with no page errors captured."
+    },
+    {
+      "criterion": "Assigned scanner can decode QR image, record entry and reject duplicate",
+      "name": "scanner-decode-qr-image-and-duplicate",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Own fixture registration created + manually verified against the seeded assigned event (evt-149114e02790d88b, Day 1, Gate 1); uploading the real generated QR PNG via scanner-image-input on the ops.scanner.1788414836136 session showed 'ENTRY ALLOWED' with the correct registration id; resubmitting the same token via the manual field showed 'ENTRY ALREADY RECORDED' with the same registration id."
+    }
+  ],
+  "action_items": [],
+  "retest_needed": false
+}
