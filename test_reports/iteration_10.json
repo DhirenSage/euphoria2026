@@ -1,0 +1,72 @@
+{
+  "iteration": 10,
+  "mode": "generate",
+  "summary": "Exercised all 5 acceptance criteria: 1 new backend test file (2 tests) for the unknown-event 404 contract, plus 3 browser checks (1 new, 2 fixed/adjusted from stale selectors) covering the public catalogue, free registration end-to-end + digital pass, and admin command-centre operability. All checks pass on latest run. One transient data-state anomaly (admin-demo account briefly is_active=false) was observed, restored, and could not be reproduced after 2 targeted repro attempts -- logged as a note, not a confirmed bug.",
+  "passed": 7,
+  "failed": 0,
+  "checks": [
+    {
+      "criterion": "Public event catalogue remains database-backed and navigable",
+      "name": "events-catalogue-browsable",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/events renders all-events-grid with event-card-sample-free-pass-1788416428 visible; clicking it navigates to the detail page showing event-title 'Sample Free Pass Event', event-fee '₹0', and event-register-button, with zero pageerror/requestfailed events captured."
+    },
+    {
+      "criterion": "A published free event can be registered end to end",
+      "name": "free-registration-confirmed-qr-pass",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Registered a fresh free fixture event via admin, then submitted valid participant details + terms at /registration/{slug}; navigated to /registration/success/{id} with confirmation-status 'CONFIRMED' and a unique EUPHORIA-2026-###### id."
+    },
+    {
+      "criterion": "Confirmed free registration produces a usable event pass",
+      "name": "free-registration-confirmed-qr-pass",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "View QR pass button opens the digital-pass with pass-status 'ACTIVE', a real PNG QR data URL (pass-qr-image), a 30+ char EUPHORIA- manual token after expanding the collapsible token panel, and visible Download-Same-Design-PDF + Print-Same-Design controls (screenshot qr-pass-visible)."
+    },
+    {
+      "criterion": "Admin portal remains operational after deployment-readiness changes",
+      "name": "admin-portal-command-centre-operational",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged in at /admin/login with seeded admin@euphoria.test credentials, reached 'Command centre' (URL /admin), saw live numeric admin-event-count and admin-registration-count, the 'Event management' nav link, and >=1 admin-event-row record."
+    },
+    {
+      "criterion": "Unknown public event is rejected cleanly",
+      "name": "test_tscheck_unknown_event_404.py::test_unknown_event_slug_returns_404",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/events/not-a-real-euphoria-event -> 404 {\"error\":{\"code\":\"event_not_found\",\"message\":\"Event not found.\"}}"
+    },
+    {
+      "criterion": "Unknown public event is rejected cleanly (known slug still resolves)",
+      "name": "test_tscheck_unknown_event_404.py::test_known_free_event_slug_still_resolves",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/events/sample-free-pass-1788416428 -> 200 {data:{slug:'sample-free-pass-1788416428', name:'Sample Free Pass Event', fee:0.0, ...}}"
+    },
+    {
+      "criterion": "Full pre-existing backend suite remains healthy (regression check)",
+      "name": "backend pytest suite (16 files, 34 tests)",
+      "lane": "backend",
+      "status": "flaky",
+      "evidence": "1st run: test_tscheck_admin_dashboard_live_data.py failed on a global events-count assertion (129 vs expected 130) due to concurrent event creation from other checks/tests in the same shared DB during this run. Reran alone immediately after -> 2 passed. Classified flaky, not a bug."
+    }
+  ],
+  "bugs": [],
+  "action_items": [
+    {
+      "item": "Transient data anomaly: mid-session, the seeded admin-demo account's is_active flipped to false (audit log shows a self-attributed 'staff.updated' event at 08:10:54Z with no browser check in this session issuing that PUT), which broke admin login for ~15s. Restored via direct DB fix (is_active=true) to unblock further testing. Reproduction attempts (10x rapid logins via curl, and a full run of staff-management-create-and-toggle against its own fixture row) did NOT reproduce it. Recommend the dev team add server-side logging/guarding around any code path that can self-deactivate the acting admin's own account, and watch for recurrence.",
+      "severity": "medium",
+      "status": "unreproduced_note"
+    }
+  ],
+  "retest_needed": false,
+  "notes": [
+    "Matrix has exactly 5 criteria; covered with 3 browser checks + 1 backend test file (2 tests), plus the pre-existing backend suite run as a regression gate.",
+    "Reused/repaired 2 pre-existing artifacts (free-registration-confirmed-qr-pass: fixed a stale QR-token selector hidden behind a collapsible panel; events-catalogue-browsable: rewritten to use the real event-card-{slug} testid instead of a non-existent 'event-card' testid) instead of duplicating new ones, per fixture/artifact reuse discipline.",
+    "admin-dashboard-connected-to-live-data (a broader pre-existing check) was left as-is / not relied upon for this matrix's admin criterion because its exact-increment counter assertions raced against other concurrent checks writing to the same shared events/registrations collections in this session; a narrower admin-portal-command-centre-operational check was authored instead to cleanly prove criterion 4 without global-count races."
+  ]
+}

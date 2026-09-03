@@ -148,7 +148,9 @@ async def ensure_catalogue(db) -> None:
     await db.euphoria_registrations.create_index("registration_id", unique=True)
     await db.euphoria_users.create_index("email", unique=True)
     await db.euphoria_sessions.create_index("token_hash", unique=True)
-    await db.euphoria_sessions.create_index("expires_at", expireAfterSeconds=0)
+    session_indexes = await db.euphoria_sessions.index_information()
+    if "expires_at_1" not in session_indexes:
+        await db.euphoria_sessions.create_index("expires_at")
     await db.euphoria_attendance.create_index(
         [("registration_id", 1), ("event_id", 1), ("event_day_id", 1)], unique=True
     )

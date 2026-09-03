@@ -1,0 +1,31 @@
+<?php
+
+use CodeIgniter\Boot;
+
+/*
+ * Copy this file to:
+ * /home/CPANEL_USER/public_html/euphoria/index.php
+ *
+ * Replace CPANEL_USER below with the real cPanel username.
+ */
+
+define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+
+if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
+    chdir(FCPATH);
+}
+
+$pathsFile = '/home/CPANEL_USER/euphoria_app/app/Config/Paths.php';
+
+if (! is_file($pathsFile)) {
+    http_response_code(500);
+    exit('EUPHORIA application path is not configured. Check cpanel-public-index.php.example instructions.');
+}
+
+require $pathsFile;
+
+$paths = new Config\Paths();
+
+require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'Boot.php';
+
+exit(Boot::bootWeb($paths));

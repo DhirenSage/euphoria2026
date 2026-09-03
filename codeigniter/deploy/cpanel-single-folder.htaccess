@@ -1,0 +1,44 @@
+Options -Indexes
+
+<IfModule mod_alias.c>
+    RedirectMatch 403 "(?i)^/euphoria/(?:app|vendor|writable|tests|deploy)(?:/|$)"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /euphoria/
+
+    # Preserve authorization headers for API clients.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Deny hidden paths and every non-public application directory.
+    RewriteRule "(^|/)\." - [F,L]
+    RewriteRule ^(?:app|vendor|writable|tests|deploy)(?:/|$) - [F,L,NC]
+
+    # Deny project/configuration files kept in the upload package.
+    RewriteRule ^(?:spark|composer\.(?:json|lock)|phpunit\.xml|env(?:\..*)?|README(?:\..*)?|ASSUMPTIONS(?:\..*)?|.*\.(?:sql|zip|bak|log))$ - [F,L,NC]
+
+    # Route application URLs through CodeIgniter; leave real assets untouched.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(self), geolocation=()"
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+<FilesMatch "^(?:\.env|env(?:\..*)?|spark|composer\.(?:json|lock)|phpunit\.xml)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule !mod_rewrite.c>
+    <FilesMatch "^(?:\.env|env(?:\..*)?|spark|composer\.(?:json|lock)|phpunit\.xml)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>

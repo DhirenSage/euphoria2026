@@ -4,6 +4,8 @@ CodeIgniter 4 + PHP 8.2 foundation for a reusable multi-programme event platform
 
 For complete Windows (Laragon/XAMPP), cPanel Terminal, cPanel File Manager-only, credential, integration, event-publishing, queue, security, and troubleshooting instructions, read [`LOCAL_AND_CPANEL_SETUP.md`](LOCAL_AND_CPANEL_SETUP.md).
 
+For the exact production target `https://sageuniversity.in/euphoria/` with File Manager + phpMyAdmin and no SSH, use [`CPANEL_SINGLE_FOLDER_DEPLOYMENT.md`](CPANEL_SINGLE_FOLDER_DEPLOYMENT.md). It is the primary guide for uploading the complete application into `/public_html/euphoria`. The safer split-directory alternative remains documented in [`CPANEL_LIVE_DEPLOYMENT.md`](CPANEL_LIVE_DEPLOYMENT.md). Matching front controllers, rewrite rules, environment templates, preflight checks, and the import-ready SQL are in `deploy/`.
+
 The public `/registration` route is the shared Euphoria 2K26 form. Its category/event dropdowns are populated from MySQL, and event prices are never accepted from browser input; `RegistrationController` validates the selected category/event pair and `RegistrationService` reads the amount from the authoritative event row.
 
 ## Local setup

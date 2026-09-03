@@ -43,3 +43,6 @@ The registration confirmation card renders the authoritative server amount in a 
 
 ## Demo credentials
 See `memory/test_credentials.md`. Remove seeded demo accounts before production.
+
+## cPanel release
+The primary no-SSH deployment target is a hardened single-folder package extracted directly into `/public_html/euphoria`, with CodeIgniter internals denied by the root `.htaccess`, bundled production dependencies, a separate import-ready MySQL SQL file, and `.env` created only on the host. `CPANEL_SINGLE_FOLDER_DEPLOYMENT.md` is the authoritative guide for this layout; `CPANEL_LIVE_DEPLOYMENT.md` retains the safer split-directory alternative. Actual live readiness still requires cPanel HTTPS, rewrite/security URL checks, database import, Easebuzz callback validation, SMTP/cron proof, and the full registration-to-attendance acceptance flow.

@@ -1,0 +1,2 @@
+adca572888c3f45f2be2aa183c9c0ed94c0e7e66c9dd13b8aa694d4535ef6854  euphoria-cpanel-single-folder.zip
+12682135cee2d6ca1145328a78d8c64b7303f261c87be76d19c7359988d96732  euphoria_initial.sql
