@@ -11,7 +11,7 @@ from urllib.parse import parse_qs
 
 import bcrypt
 from cryptography.fernet import Fernet
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 import httpx
 import qrcode
@@ -23,12 +23,15 @@ from lib.dates import today_iso
 from lib.db import db
 from lib.email_template import pass_email_html, pass_email_text
 from lib.pdf_generator import pass_pdf
+from lib.spreadsheet import parse_spreadsheet
 from models.euphoria import (
+    AdminAttendanceResponse,
     AdminDashboardResponse,
     AdminEventWrite,
     AdminPaymentsResponse,
     AdminRegistrationsResponse,
     AdminStaffResponse,
+    BulkPassImportResponse,
     EuphoriaEvent,
     EuphoriaEventResponse,
     EuphoriaEventsResponse,
@@ -62,7 +65,7 @@ def clean(document: dict) -> dict:
 
 SESSION_COOKIE = "euphoria_session"
 SESSION_HOURS = 8
-GATES = ["Gate 1 · Main Entry", "Gate 2 · Sports Entry", "Gate 3 · Auditorium"]
+DEFAULT_ENTRY_POINT = "Main Entry"
 ADMIN_PORTAL_ROLES = {"admin", "event_admin", "finance", "report_viewer"}
 EVENT_MANAGER_ROLES = {"admin", "event_admin"}
 FINANCE_ROLES = {"admin", "finance"}
@@ -285,6 +288,49 @@ async def admin_registrations(request: Request):
     return {"data": output}
 
 
+@router.get("/admin/attendance-roster", response_model=AdminAttendanceResponse)
+async def admin_attendance_roster(request: Request, date: str = "", event_id: str = "", status: str = "all"):
+    await require_user(request, ADMIN_PORTAL_ROLES)
+    roster_date = date or today_iso("Asia/Kolkata")
+    if not __import__("re").fullmatch(r"\d{4}-\d{2}-\d{2}", roster_date):
+        raise HTTPException(status_code=422, detail="Use a valid YYYY-MM-DD date.")
+    all_events = await db.euphoria_events.find({}, {"_id": 0, "id": 1, "name": 1, "event_days": 1}).sort("name", 1).to_list(5000)
+    day_by_event: dict[str, dict] = {}
+    for event_row in all_events:
+        matching_day = next((day for day in event_row.get("event_days", []) if day.get("date") == roster_date), None)
+        if matching_day and (not event_id or event_row["id"] == event_id):
+            day_by_event[event_row["id"]] = matching_day
+    event_ids = list(day_by_event)
+    attendance_rows = await db.euphoria_attendance.find(
+        {"event_id": {"$in": event_ids}, "event_day_id": {"$in": [day["id"] for day in day_by_event.values()]}},
+        {"_id": 0},
+    ).to_list(10000) if event_ids else []
+    attendance_map = {row["registration_id"]: row for row in attendance_rows}
+    registrations = await db.euphoria_registrations.find(
+        {"event_id": {"$in": event_ids}, "status": "confirmed"},
+        {"_id": 0, "registration_id": 1, "participant_name": 1, "email": 1, "mobile": 1, "college": 1, "event_id": 1, "event_name": 1},
+    ).sort([("event_name", 1), ("participant_name", 1)]).to_list(10000) if event_ids else []
+    rows = []
+    for registration in registrations:
+        entry = attendance_map.get(registration["registration_id"])
+        entered = entry is not None
+        if status == "entered" and not entered:
+            continue
+        if status == "not_entered" and entered:
+            continue
+        day = day_by_event[registration["event_id"]]
+        rows.append({**registration, "event_day_id": day["id"], "event_day_label": day["label"], "event_date": day["date"], "entered": entered, "entry_at": entry.get("entry_at") if entry else None, "scanner_name": entry.get("scanner_name") if entry else None})
+    entered_count = sum(1 for registration in registrations if registration["registration_id"] in attendance_map)
+    return {
+        "date": roster_date,
+        "events": [{"id": event_row["id"], "name": event_row["name"]} for event_row in all_events],
+        "rows": rows,
+        "total": len(registrations),
+        "entered": entered_count,
+        "not_entered": len(registrations) - entered_count,
+    }
+
+
 @router.post("/admin/registrations/{registration_id}/confirm", response_model=RegistrationResponse)
 async def admin_confirm_registration(registration_id: str, request: Request):
     user = await require_user(request, FINANCE_ROLES)
@@ -423,6 +469,35 @@ def send_pass_email_sync(recipient: str, data: dict, pass_url: str, pdf_bytes: b
         smtp.send_message(message)
 
 
+async def deliver_bulk_pass_email(registration_id: str, pass_key: str):
+    registration = await db.euphoria_registrations.find_one({"registration_id": registration_id})
+    if not registration:
+        return
+    event_row = await db.euphoria_events.find_one({"id": registration["event_id"]}, {"_id": 0})
+    if not event_row:
+        return
+    data = {
+        "registration_id": registration_id,
+        "participant_name": registration["participant_name"],
+        "event_name": registration["event_name"],
+        "category_name": registration["category_name"],
+        "venue": event_row["venue"],
+        "event_date": event_row["event_date"],
+        "event_time": event_row["event_time"],
+        "college": registration.get("college", "Registered participant"),
+        "payment_status": "complimentary",
+    }
+    pass_url = f"{os.environ.get('APP_URL', '').rstrip('/')}/pass/{registration_id}?key={pass_key}"
+    try:
+        token = cipher().decrypt(registration["qr_token_ciphertext"].encode()).decode()
+        complete_pdf = await asyncio.to_thread(pass_pdf, data, qr_png(token))
+        await asyncio.to_thread(send_pass_email_sync, registration["email"], data, pass_url, complete_pdf)
+        await db.euphoria_registrations.update_one({"_id": registration["_id"]}, {"$set": {"pass_sent_at": datetime.now(timezone.utc), "bulk_email_status": "sent"}})
+    except Exception as exc:
+        await db.euphoria_registrations.update_one({"_id": registration["_id"]}, {"$set": {"bulk_email_status": "failed", "bulk_email_error": type(exc).__name__}})
+        await audit(None, "bulk_pass.email_failed", "registrations", registration_id, {"error_type": type(exc).__name__})
+
+
 @router.post("/admin/registrations/{registration_id}/resend-pass")
 async def resend_pass(registration_id: str, request: Request):
     user = await require_user(request, EVENT_MANAGER_ROLES | FINANCE_ROLES)
@@ -453,6 +528,92 @@ async def resend_pass(registration_id: str, request: Request):
         raise HTTPException(status_code=502, detail="The mail provider could not send this pass.") from exc
     await audit(user, "pass.resent", "registrations", registration_id)
     return {"ok": True, "message": "Pass email sent successfully."}
+
+
+@router.get("/admin/bulk-passes/template.csv")
+async def bulk_pass_template(request: Request):
+    await require_user(request, EVENT_MANAGER_ROLES)
+    content = "participant_name,mobile,institute_name,email,event_name,event_slug,city,participant_affiliation\nAarav Sharma,9876543210,SAGE University Indore,aarav@example.com,Dance Competition,dance-competition,Indore,sageian\n"
+    return Response(content=content, media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="euphoria-bulk-pass-template.csv"'})
+
+
+@router.post("/admin/bulk-passes/import", response_model=BulkPassImportResponse)
+async def import_bulk_passes(background_tasks: BackgroundTasks, request: Request, file: UploadFile = File(...)):
+    user = await require_user(request, EVENT_MANAGER_ROLES)
+    content = await file.read()
+    if not content or len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="Upload a non-empty CSV or XLSX file up to 5 MB.")
+    try:
+        rows = parse_spreadsheet(file.filename or "", content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    events = await db.euphoria_events.find({"status": {"$nin": ["cancelled", "completed", "archived"]}}, {"_id": 0}).to_list(5000)
+    by_slug = {event["slug"].strip().lower(): event for event in events}
+    by_name: dict[str, list[dict]] = {}
+    for event in events:
+        by_name.setdefault(event["name"].strip().lower(), []).append(event)
+
+    batch_id = f"bulk-{secrets.token_hex(8)}"
+    created_ids: list[str] = []
+    errors: list[dict] = []
+    skipped = 0
+    for row_number, values in enumerate(rows, start=2):
+        name = (values.get("participant_name") or values.get("name") or "").strip()
+        mobile = (values.get("mobile") or values.get("mobile_no") or values.get("phone") or values.get("no") or "").replace(" ", "")
+        college = (values.get("institute_name") or values.get("college") or values.get("institution") or "").strip()
+        email = (values.get("email") or values.get("email_id") or "").strip().lower()
+        slug = (values.get("event_slug") or "").strip().lower()
+        event_name = (values.get("event_name") or values.get("event") or "").strip().lower()
+        event_row = by_slug.get(slug) if slug else None
+        if not event_row and event_name and len(by_name.get(event_name, [])) == 1:
+            event_row = by_name[event_name][0]
+        if not name or not email or "@" not in email or not mobile.isdigit() or len(mobile) != 10 or not college or not event_row:
+            errors.append({"row": row_number, "message": "Name, valid 10-digit mobile, institute, email, and an exact event name/slug are required."})
+            continue
+        if await db.euphoria_registrations.find_one({"event_id": event_row["id"], "email": email, "status": {"$ne": "cancelled"}}):
+            skipped += 1
+            errors.append({"row": row_number, "message": "This email already has an active registration for the event."})
+            continue
+        counter = await db.counters.find_one_and_update({"_id": "euphoria_registration"}, {"$inc": {"seq": 1}}, upsert=True, return_document=ReturnDocument.AFTER)
+        registration_id = f"EUPHORIA-2026-{counter['seq']:06d}"
+        pass_key = secrets.token_urlsafe(32)
+        qr_token = f"EUPHORIA-{secrets.token_urlsafe(32)}"
+        now = datetime.now(timezone.utc)
+        registration = {
+            "registration_id": registration_id,
+            "participant_name": name,
+            "father_name": None,
+            "email": email,
+            "mobile": mobile,
+            "age": None,
+            "college": college,
+            "city": (values.get("city") or "").strip() or None,
+            "participant_affiliation": "sageian" if (values.get("participant_affiliation") or "").strip().lower() == "sageian" else "non_sageian",
+            "event_id": event_row["id"],
+            "event_name": event_row["name"],
+            "category_id": event_row["category_id"],
+            "category_name": event_row["category_name"],
+            "registration_type": "individual",
+            "team_name": None,
+            "team_members": None,
+            "total_amount": 0.0,
+            "status": "confirmed",
+            "payment": {"status": "manual_verified", "mode": "complimentary", "txnid": f"COMP-{secrets.token_hex(10)}", "verified_by": user["id"], "verified_at": now},
+            "pass_key_hash": hashlib.sha256(pass_key.encode()).hexdigest(),
+            "qr_token_hash": hashlib.sha256(qr_token.encode()).hexdigest(),
+            "qr_token_ciphertext": cipher().encrypt(qr_token.encode()).decode(),
+            "qr_status": "active",
+            "bulk_import_id": batch_id,
+            "bulk_email_status": "scheduled",
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.euphoria_registrations.insert_one(registration)
+        created_ids.append(registration_id)
+        background_tasks.add_task(deliver_bulk_pass_email, registration_id, pass_key)
+    await audit(user, "bulk_pass.imported", "registrations", batch_id, {"rows": len(rows), "created": len(created_ids), "skipped": skipped, "errors": len(errors)})
+    return {"total_rows": len(rows), "created": len(created_ids), "skipped": skipped, "emails_scheduled": len(created_ids), "registration_ids": created_ids, "errors": errors}
 
 
 @router.get("/admin/staff", response_model=AdminStaffResponse)
@@ -763,41 +924,28 @@ async def download_pass_pdf(registration_id: str, request: Request, key: str = "
 
 @router.get("/scanner/context", response_model=ScannerContextResponse)
 async def scanner_context(request: Request):
-    user = await require_user(request, {"scanner"} | EVENT_MANAGER_ROLES)
-    query = {"status": {"$in": ["registration_open", "scheduled", "live"]}}
-    assignments = user.get("assignments", []) if user["role"] == "scanner" else []
-    if user["role"] == "scanner":
-        assigned_ids = [item["event_id"] for item in assignments] or user.get("assigned_event_ids", [])
-        query["id"] = {"$in": assigned_ids}
-    rows = await db.euphoria_events.find(query, {"_id": 0}).sort("name", 1).to_list(1000)
-    assignment_views = []
-    if user["role"] == "scanner" and assignments:
-        for item in assignments:
-            event_row = next((row for row in rows if row["id"] == item["event_id"]), None)
-            if not event_row:
-                continue
-            allowed_days = set(item.get("event_day_ids", []))
-            event_row["event_days"] = [day for day in event_row.get("event_days", []) if day["id"] in allowed_days]
-            assignment_views.append({"event_id": item["event_id"], "event_day_ids": item.get("event_day_ids", []), "gates": item.get("gates", [])})
-    else:
-        assignment_views = [{"event_id": row["id"], "event_day_ids": [day["id"] for day in row.get("event_days", [])], "gates": GATES} for row in rows]
-    visible_gates = sorted({gate for item in assignment_views for gate in item["gates"]})
-    return {"events": rows, "gates": visible_gates, "assignments": assignment_views, "demo_mode": os.environ.get("SCANNER_ALLOW_OFFDATE", "false").lower() == "true"}
+    await require_user(request, {"scanner"} | EVENT_MANAGER_ROLES)
+    return {
+        "server_date": today_iso("Asia/Kolkata"),
+        "demo_mode": os.environ.get("SCANNER_ALLOW_OFFDATE", "false").lower() == "true",
+        "mode": "automatic",
+        "instructions": "Scan any EUPHORIA pass. The event and eligible event day are detected automatically from the QR.",
+    }
 
 
-async def scan_result(user: dict, status: str, message: str, payload: ScanRequest, registration: dict | None = None, first_entry_at=None):
+async def scan_result(user: dict, status: str, message: str, token: str, registration: dict | None = None, event: dict | None = None, day: dict | None = None, first_entry_at=None):
     attempt = {
         "status": status,
         "message": message,
         "scanner_id": user["id"],
         "scanner_name": user["name"],
-        "event_id": payload.event_id,
-        "event_day_id": payload.event_day_id,
-        "gate": payload.gate,
+        "event_id": event.get("id") if event else None,
+        "event_day_id": day.get("id") if day else None,
+        "gate": DEFAULT_ENTRY_POINT,
         "registration_id": registration.get("registration_id") if registration else None,
         "participant_name": registration.get("participant_name") if registration else None,
         "event_name": registration.get("event_name") if registration else None,
-        "token_hint": payload.token[-8:],
+        "token_hint": token[-8:],
         "created_at": datetime.now(timezone.utc),
     }
     await db.euphoria_scan_attempts.insert_one(attempt)
@@ -809,6 +957,11 @@ async def scan_result(user: dict, status: str, message: str, payload: ScanReques
             "event_name": registration["event_name"],
             "payment_status": registration.get("payment", {}).get("status", "unknown"),
             "qr_status": registration.get("qr_status", "unknown"),
+            "email": registration.get("email", ""),
+            "mobile": registration.get("mobile", ""),
+            "college": registration.get("college", ""),
+            "event_day_label": day.get("label") if day else None,
+            "event_day_date": day.get("date") if day else None,
         }
     return {"ok": status == "allowed", "status": status, "message": message, "participant": participant, "first_entry_at": first_entry_at}
 
@@ -816,36 +969,38 @@ async def scan_result(user: dict, status: str, message: str, payload: ScanReques
 @router.post("/scanner/scan", response_model=ScanResponse)
 async def scanner_scan(payload: ScanRequest, request: Request):
     user = await require_user(request, {"scanner"} | EVENT_MANAGER_ROLES)
-    if payload.gate not in GATES:
-        return await scan_result(user, "denied", "Select a valid assigned gate.", payload)
-    event_row = await db.euphoria_events.find_one({"id": payload.event_id}, {"_id": 0})
-    if not event_row or not any(day["id"] == payload.event_day_id for day in event_row.get("event_days", [])):
-        return await scan_result(user, "denied", "Select a valid event and event day.", payload)
-    if user["role"] == "scanner" and payload.event_id not in user.get("assigned_event_ids", []):
-        return await scan_result(user, "denied", "This scanner is not assigned to this event.", payload)
-    if user["role"] == "scanner" and user.get("assignments"):
-        assignment = next((item for item in user["assignments"] if item.get("event_id") == payload.event_id), None)
-        if not assignment or payload.event_day_id not in assignment.get("event_day_ids", []) or payload.gate not in assignment.get("gates", []):
-            return await scan_result(user, "denied", "This scanner is not assigned to the selected event day and gate.", payload)
-    day = next(day for day in event_row["event_days"] if day["id"] == payload.event_day_id)
-    allow_offdate = os.environ.get("SCANNER_ALLOW_OFFDATE", "false").lower() == "true"
-    if not allow_offdate and day["date"] != today_iso("Asia/Kolkata"):
-        return await scan_result(user, "denied", "This event day is not active today.", payload)
-    registration = await db.euphoria_registrations.find_one({"qr_token_hash": hashlib.sha256(payload.token.strip().encode()).hexdigest()})
+    token = payload.token.strip()
+    registration = await db.euphoria_registrations.find_one({"qr_token_hash": hashlib.sha256(token.encode()).hexdigest()})
     if not registration:
-        return await scan_result(user, "denied", "This QR code is invalid or has been revoked.", payload)
-    if registration["event_id"] != payload.event_id:
-        return await scan_result(user, "denied", "This pass is not valid for this event.", payload, registration)
+        return await scan_result(user, "denied", "This QR code is invalid or has been revoked.", token)
+    event_row = await db.euphoria_events.find_one({"id": registration["event_id"]}, {"_id": 0})
+    if not event_row:
+        return await scan_result(user, "denied", "The event linked to this pass no longer exists.", token, registration)
     if registration.get("status") != "confirmed" or registration.get("payment", {}).get("status") not in {"successful", "manual_verified"}:
-        return await scan_result(user, "denied", "Payment or registration confirmation is required.", payload, registration)
+        return await scan_result(user, "denied", "Payment or registration confirmation is required.", token, registration, event_row)
     if registration.get("qr_status") != "active":
-        return await scan_result(user, "denied", "This QR code is invalid or has been revoked.", payload, registration)
+        return await scan_result(user, "denied", "This QR code is invalid, expired, or has been revoked.", token, registration, event_row)
+    days = sorted(event_row.get("event_days", []), key=lambda item: item.get("date", ""))
+    current_date = today_iso("Asia/Kolkata")
+    day = next((item for item in days if item.get("date") == current_date), None)
+    allow_offdate = os.environ.get("SCANNER_ALLOW_OFFDATE", "false").lower() == "true"
+    if not day and allow_offdate and days:
+        previous = await db.euphoria_attendance.find({"registration_id": registration["registration_id"], "event_id": event_row["id"]}, {"event_day_id": 1}).to_list(20)
+        used = {item["event_day_id"] for item in previous}
+        day = next((item for item in days if item["id"] not in used), days[0])
+    if not day:
+        if days and current_date > days[-1]["date"]:
+            await db.euphoria_registrations.update_one({"_id": registration["_id"]}, {"$set": {"qr_status": "expired", "updated_at": datetime.now(timezone.utc)}})
+            registration["qr_status"] = "expired"
+            return await scan_result(user, "denied", "This pass has expired because all configured event days are over.", token, registration, event_row)
+        message = "This pass is not active yet." if days and current_date < days[0]["date"] else "This event has no entry scheduled for today."
+        return await scan_result(user, "denied", message, token, registration, event_row)
     attendance = {
         "registration_id": registration["registration_id"],
-        "event_id": payload.event_id,
-        "event_day_id": payload.event_day_id,
+        "event_id": event_row["id"],
+        "event_day_id": day["id"],
         "event_day_label": day["label"],
-        "gate": payload.gate,
+        "gate": DEFAULT_ENTRY_POINT,
         "scanner_id": user["id"],
         "scanner_name": user["name"],
         "status": "allowed",
@@ -856,9 +1011,9 @@ async def scanner_scan(payload: ScanRequest, request: Request):
     except DuplicateKeyError:
         existing = await db.euphoria_attendance.find_one({
             "registration_id": registration["registration_id"],
-            "event_id": payload.event_id,
-            "event_day_id": payload.event_day_id,
+            "event_id": event_row["id"],
+            "event_day_id": day["id"],
         })
-        return await scan_result(user, "duplicate", "Entry already recorded for this event day.", payload, registration, existing.get("entry_at") if existing else None)
-    await audit(user, "attendance.allowed", "attendance", registration["registration_id"], {"event_day_id": payload.event_day_id, "gate": payload.gate})
-    return await scan_result(user, "allowed", "Entry allowed and attendance recorded.", payload, registration, attendance["entry_at"])
+        return await scan_result(user, "duplicate", "Entry already recorded for this event day.", token, registration, event_row, day, existing.get("entry_at") if existing else None)
+    await audit(user, "attendance.allowed", "attendance", registration["registration_id"], {"event_day_id": day["id"], "entry_point": DEFAULT_ENTRY_POINT})
+    return await scan_result(user, "allowed", "Entry allowed and attendance recorded for today.", token, registration, event_row, day, attendance["entry_at"])

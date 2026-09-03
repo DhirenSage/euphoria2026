@@ -163,6 +163,31 @@ export interface AdminRegistrationsResponse {
   data: AdminRegistrationRow[];
 }
 
+export interface AttendanceRosterRow {
+  registration_id: string;
+  participant_name: string;
+  email: string;
+  mobile: string;
+  college: string;
+  event_id: string;
+  event_name: string;
+  event_day_id: string;
+  event_day_label: string;
+  event_date: string;
+  entered: boolean;
+  entry_at: string | null;
+  scanner_name: string | null;
+}
+
+export interface AdminAttendanceResponse {
+  date: string;
+  events: Array<{ id: string; name: string }>;
+  rows: AttendanceRosterRow[];
+  total: number;
+  entered: number;
+  not_entered: number;
+}
+
 export interface AdminRegistrationRow {
   registration_id: string;
   participant_name: string;
@@ -220,6 +245,15 @@ export interface AdminStaffResponse {
   data: StaffRow[];
 }
 
+export interface BulkPassImportResponse {
+  total_rows: number;
+  created: number;
+  skipped: number;
+  emails_scheduled: number;
+  registration_ids: string[];
+  errors: Array<{ row: number; message: string }>;
+}
+
 export interface PassResponse {
   registration_id: string;
   participant_name: string;
@@ -237,17 +271,14 @@ export interface PassResponse {
 }
 
 export interface ScannerContextResponse {
-  events: EuphoriaEvent[];
-  gates: string[];
+  server_date: string;
   demo_mode: boolean;
-  assignments: Array<{ event_id: string; event_day_ids: string[]; gates: string[] }>;
+  mode: "automatic";
+  instructions: string;
 }
 
 export interface ScanRequest {
   token: string;
-  event_id: string;
-  event_day_id: string;
-  gate: string;
 }
 
 export interface ScanResponse {
@@ -260,6 +291,11 @@ export interface ScanResponse {
     event_name: string;
     payment_status: string;
     qr_status: string;
+    email: string;
+    mobile: string;
+    college: string;
+    event_day_label: string | null;
+    event_day_date: string | null;
   } | null;
   first_entry_at: string | null;
 }

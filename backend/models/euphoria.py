@@ -172,6 +172,36 @@ class AdminRegistrationsResponse(BaseModel):
     data: list["AdminRegistrationRow"]
 
 
+class AttendanceRosterRow(BaseModel):
+    registration_id: str
+    participant_name: str
+    email: str
+    mobile: str
+    college: str
+    event_id: str
+    event_name: str
+    event_day_id: str
+    event_day_label: str
+    event_date: str
+    entered: bool
+    entry_at: datetime | None = None
+    scanner_name: str | None = None
+
+
+class AttendanceRosterEvent(BaseModel):
+    id: str
+    name: str
+
+
+class AdminAttendanceResponse(BaseModel):
+    date: str
+    events: list[AttendanceRosterEvent]
+    rows: list[AttendanceRosterRow]
+    total: int
+    entered: int
+    not_entered: int
+
+
 class AttendanceSummary(BaseModel):
     event_day_id: str
     event_day_label: str
@@ -265,6 +295,20 @@ class AdminStaffResponse(BaseModel):
     data: list[StaffRow]
 
 
+class BulkPassImportError(BaseModel):
+    row: int
+    message: str
+
+
+class BulkPassImportResponse(BaseModel):
+    total_rows: int
+    created: int
+    skipped: int
+    emails_scheduled: int
+    registration_ids: list[str]
+    errors: list[BulkPassImportError]
+
+
 AdminRegistrationsResponse.model_rebuild()
 
 
@@ -285,17 +329,14 @@ class PassResponse(BaseModel):
 
 
 class ScannerContextResponse(BaseModel):
-    events: list[EuphoriaEvent]
-    gates: list[str]
+    server_date: str
     demo_mode: bool
-    assignments: list[dict] = []
+    mode: Literal["automatic"] = "automatic"
+    instructions: str
 
 
 class ScanRequest(BaseModel):
     token: str = Field(min_length=20, max_length=300)
-    event_id: str
-    event_day_id: str
-    gate: str = Field(min_length=2, max_length=120)
 
 
 class ScanParticipant(BaseModel):
@@ -304,6 +345,11 @@ class ScanParticipant(BaseModel):
     event_name: str
     payment_status: str
     qr_status: str
+    email: str
+    mobile: str
+    college: str
+    event_day_label: str | None = None
+    event_day_date: str | None = None
 
 
 class ScanResponse(BaseModel):

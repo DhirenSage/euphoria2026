@@ -1,18 +1,33 @@
-import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
-import type { AdminStaffResponse, EuphoriaEvent, StaffRow } from "@/lib/euphoria";
+import type { AdminStaffResponse, StaffRow } from "@/lib/euphoria";
 
-interface StaffManagementProps { events: EuphoriaEvent[]; gates: string[]; }
-
-export default function StaffManagement({ events, gates }: StaffManagementProps) {
-  const [scannerId, setScannerId] = useState(""); const [eventId, setEventId] = useState(""); const [days, setDays] = useState<string[]>([]); const [selectedGates, setSelectedGates] = useState<string[]>([]);
+export default function StaffManagement() {
   const staff = useQuery({ queryKey: ["admin-staff"], queryFn: () => apiGet<AdminStaffResponse>("/admin/staff") });
-  const create = useMutation({ mutationFn: (payload: { name: string; email: string; password: string; role: StaffRow["role"] }) => apiPost<StaffRow>("/admin/staff", payload), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-staff"] }) });
-  const update = useMutation({ mutationFn: ({ id, payload }: { id: string; payload: { name: string; role: StaffRow["role"]; is_active: boolean; password: string | null } }) => apiPut<StaffRow>(`/admin/staff/${id}`, payload), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-staff"] }) });
-  const assign = useMutation({ mutationFn: () => apiPost(`/admin/staff/${scannerId}/assignments`, { event_id: eventId, event_day_ids: days, gates: selectedGates }), onSuccess: () => { setDays([]); setSelectedGates([]); queryClient.invalidateQueries({ queryKey: ["admin-staff"] }); } });
-  const scanners = staff.data?.data.filter((user) => user.role === "scanner" && user.is_active) ?? [];
-  const selectedEvent = useMemo(() => events.find((event) => event.id === eventId), [events, eventId]);
-  return <section id="staff" className="ops-panel" data-testid="staff-management"><div className="ops-panel-heading"><div><p className="eyebrow accent">ROLE-BASED ACCESS</p><h2>Staff & scanner assignments</h2></div></div><div className="ops-management-grid"><form className="ops-subpanel" data-testid="staff-create-form" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); create.mutate({ name: String(data.get("name")), email: String(data.get("email")), password: String(data.get("password")), role: String(data.get("role")) as StaffRow["role"] }); event.currentTarget.reset(); }}><p className="eyebrow">CREATE STAFF USER</p><label>Name<input name="name" required data-testid="staff-name-input" /></label><label>Email<input name="email" type="email" required data-testid="staff-email-input" /></label><label>Temporary password<input name="password" type="password" minLength={12} required data-testid="staff-password-input" /></label><label>Role<select name="role" data-testid="staff-role-select"><option value="scanner">Scanner</option><option value="event_admin">Event Admin</option><option value="finance">Finance</option><option value="report_viewer">Report Viewer</option><option value="admin">Super Admin</option></select></label><button className="button button-yellow" type="submit" disabled={create.isPending} data-testid="staff-create-button">Create staff account</button>{create.isError && <p className="form-error">Could not create staff. Check unique email and password length.</p>}</form><form className="ops-subpanel" data-testid="scanner-assignment-form" onSubmit={(event) => { event.preventDefault(); assign.mutate(); }}><p className="eyebrow">ASSIGN SCANNER</p><label>Scanner<select value={scannerId} required onChange={(e) => setScannerId(e.target.value)} data-testid="assignment-scanner-select"><option value="">Select scanner</option>{scanners.map((user) => <option key={user.id} value={user.id} label={`${user.name} · ${user.email}`} />)}</select></label><label>Event<select value={eventId} required onChange={(e) => { setEventId(e.target.value); setDays([]); }} data-testid="assignment-event-select"><option value="">Select event</option>{events.map((event) => <option key={event.id} value={event.id} label={event.name} />)}</select></label><fieldset><legend>Allowed days</legend>{selectedEvent?.event_days.map((day) => <label className="ops-check" key={day.id}><input type="checkbox" checked={days.includes(day.id)} onChange={(e) => setDays(e.target.checked ? [...days, day.id] : days.filter((id) => id !== day.id))} />{day.label} · {day.date}</label>)}</fieldset><fieldset><legend>Allowed gates</legend>{gates.map((gate) => <label className="ops-check" key={gate}><input type="checkbox" checked={selectedGates.includes(gate)} onChange={(e) => setSelectedGates(e.target.checked ? [...selectedGates, gate] : selectedGates.filter((item) => item !== gate))} />{gate}</label>)}</fieldset><button className="button button-yellow" type="submit" disabled={!scannerId || !eventId || !days.length || !selectedGates.length || assign.isPending} data-testid="assignment-save-button">Save assignment</button>{assign.isError && <p className="form-error">Assignment could not be saved.</p>}</form></div><div className="staff-list">{staff.data?.data.map((user) => <div key={user.id} className="staff-row" data-testid="staff-row"><div><strong>{user.name}</strong><small>{user.email}</small></div><span className="ops-status">{user.role.replaceAll("_", " ")}</span><span>{user.assignments?.length ?? 0} assignments</span><button onClick={() => update.mutate({ id: user.id, payload: { name: user.name, role: user.role, is_active: !user.is_active, password: null } })} data-testid={`staff-toggle-${user.id}`}>{user.is_active ? "Deactivate" : "Activate"}</button></div>)}</div></section>;
+  const create = useMutation({
+    mutationFn: (payload: { name: string; email: string; password: string; role: "scanner" }) => apiPost<StaffRow>("/admin/staff", payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-staff"] }),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name: string; role: "scanner"; is_active: boolean; password: null } }) => apiPut<StaffRow>(`/admin/staff/${id}`, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-staff"] }),
+  });
+  const scanners = staff.data?.data.filter((user) => user.role === "scanner") ?? [];
+
+  return <section id="staff" className="ops-panel" data-testid="scanner-user-management">
+    <div className="ops-panel-heading"><div><p className="eyebrow accent">SIMPLE SCANNER ACCESS</p><h2>Scanner users</h2><p className="ops-panel-copy" data-testid="scanner-access-rule">Every active scanner account can scan every event. Name the account after the event coordinator for easy management.</p></div><span>{scanners.length} accounts</span></div>
+    <div className="ops-management-grid scanner-management-grid">
+      <form className="ops-subpanel" data-testid="scanner-user-create-form" onSubmit={(event) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); create.mutate({ name: String(data.get("name")), email: String(data.get("email")), password: String(data.get("password")), role: "scanner" }, { onSuccess: () => form.reset() }); }}>
+        <p className="eyebrow">CREATE SCANNER LOGIN</p>
+        <label>Coordinator / scanner name<input name="name" required data-testid="scanner-user-name-input" /></label>
+        <label>Login email<input name="email" type="email" required data-testid="scanner-user-email-input" /></label>
+        <label>Temporary password<input name="password" type="password" minLength={12} required data-testid="scanner-user-password-input" /></label>
+        <button className="button button-yellow" type="submit" disabled={create.isPending} data-testid="scanner-user-create-button">{create.isPending ? "Creating…" : "Create scanner login"}</button>
+        {create.isSuccess && <p className="ops-success" data-testid="scanner-user-create-success">Scanner login created. It can scan every event automatically.</p>}
+        {create.isError && <p className="form-error" data-testid="scanner-user-create-error">Could not create scanner. Check the unique email and 12-character password.</p>}
+      </form>
+      <div className="ops-subpanel" data-testid="scanner-user-list"><p className="eyebrow">ACTIVE ACCESS LIST</p>{scanners.map((user) => <div key={user.id} className="staff-row scanner-user-row" data-testid="scanner-user-row"><div><strong>{user.name}</strong><small>{user.email}</small></div><span className={`ops-status ${user.is_active ? "status-live" : "status-cancelled"}`}>{user.is_active ? "ACTIVE" : "DISABLED"}</span><button onClick={() => update.mutate({ id: user.id, payload: { name: user.name, role: "scanner", is_active: !user.is_active, password: null } })} data-testid={`scanner-user-toggle-${user.id}`}>{user.is_active ? "Disable" : "Enable"}</button></div>)}{!scanners.length && <p className="empty-copy" data-testid="scanner-user-empty">No scanner users yet.</p>}</div>
+    </div>
+  </section>;
 }
