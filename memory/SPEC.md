@@ -46,3 +46,23 @@ See `memory/test_credentials.md`. Remove seeded demo accounts before production.
 
 ## cPanel release
 The primary no-SSH deployment target is a hardened single-folder package extracted directly into `/public_html/euphoria`, with CodeIgniter internals denied by the root `.htaccess`, bundled production dependencies, a separate import-ready MySQL SQL file, and `.env` created only on the host. `CPANEL_SINGLE_FOLDER_DEPLOYMENT.md` is the authoritative guide for this layout; `CPANEL_LIVE_DEPLOYMENT.md` retains the safer split-directory alternative. Actual live readiness still requires cPanel HTTPS, rewrite/security URL checks, database import, Easebuzz callback validation, SMTP/cron proof, and the full registration-to-attendance acceptance flow.
+
+## Automatic scanner flow
+- Every active SCANNER account can scan every event; scanner assignments and gate selection are not used in V1 operations.
+- The QR resolves its own registration/event. The server matches today's configured event day and records one attendance row per registration/event/day under the database unique constraint.
+- A second scan on the same event day is denied, a configured later day is allowed, and a scan after the final configured day marks the pass expired. Non-production `SCANNER_ALLOW_OFFDATE` selects the next unused configured day for deterministic demos only.
+- Scanner UI opens directly to camera, image upload, and manual token fallback and returns participant, institute, contact, event, day, payment, and pass status.
+
+## Scanner users and attendance roster
+- Admin scanner-user creation is name, login email, and temporary password only; scanner role is automatic and accounts can be enabled/disabled.
+- Admin date-wise attendance roster filters by server date, event, and entered/not-entered status and includes both expected confirmed participants and completed entries.
+
+## Bulk complimentary pass generation
+- Admin accepts UTF-8 CSV and Excel `.xlsx` files up to 5 MB / 500 participant rows.
+- Required columns are participant name, 10-digit mobile, institute name, email, and exact event name or event slug; city and affiliation are optional.
+- Valid rows become separate confirmed complimentary registrations with active random QR tokens, PDF-capable pass access, successful zero-value payment records, and queued/scheduled pass email. Duplicate email + event rows are skipped with row-level errors.
+
+## Dynamic public media
+- Homepage and `/gallery` use active ordered media records for hero, highlights, featured performer/video, line-up, and gallery strip while schedule and category highlights remain event-backed.
+- Admin Media Manager supports JPG/PNG/WEBP upload and YouTube/Vimeo/direct MP4/WEBM URLs, caption, optional event relationship, section placement, display order, active state, edit, and delete.
+- Uploaded files are stored outside the public directory (`writable/uploads/media` in CodeIgniter; protected backend uploads in preview) and served through controlled media endpoints.

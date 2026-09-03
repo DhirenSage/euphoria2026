@@ -1,201 +1,247 @@
 {
-  "theme": "vibrant-youth-festival",
-  "archetype": "ARCHETYPE 6: VIBRANT PLAY + ELECTRIC FESTIVAL (High contrast neon-punch with structured tickets)",
-  "colors": {
-    "surfaces": [
-      {
-        "name": "page",
-        "kind": "solid",
-        "bg": "#0D0F17",
-        "on_bg": "#F8FAFC",
-        "on_bg_muted": "#94A3B8"
+  "theme": "dark",
+  "archetype": "ARCHETYPE 7: ELECTRIC & NEON (Fest Mega-Stage & Cyber Rave Aesthetic with high-contrast electric amber/crimson/cyan accents)",
+  "design_system": {
+    "visual_theme": "Electric Mega-Fest: Deep void obsidian background with hyper-vibrant neon glow highlights, kinetic typography, crisp 1px borders, and tactile glass cards for event schedules & lineups.",
+    "typography": {
+      "font_heading": "Space Grotesk Variable, sans-serif",
+      "font_body": "DM Sans Variable, sans-serif",
+      "font_mono": "JetBrains Mono Variable, monospace",
+      "import_statement": "@import \"@fontsource-variable/space-grotesk\";\n@import \"@fontsource-variable/dm-sans\";\n@import \"@fontsource-variable/jetbrains-mono\";",
+      "scale_px": {
+        "display": 56,
+        "h1": 44,
+        "h2": 32,
+        "h3": 22,
+        "body": 16,
+        "caption": 14
       },
-      {
-        "name": "pass_ticket_card",
-        "kind": "solid",
-        "bg": "#161B26",
-        "on_bg": "#FFFFFF",
-        "on_bg_muted": "#CBD5E1"
-      },
-      {
-        "name": "ticket_stub_qr_zone",
-        "kind": "solid",
-        "bg": "#FFFFFF",
-        "on_bg": "#090D16",
-        "on_bg_muted": "#475569"
-      },
-      {
-        "name": "badge_verified_pill",
-        "kind": "solid",
-        "bg": "#10B981",
-        "on_bg": "#062817",
-        "on_bg_muted": "#064E3B"
-      },
-      {
-        "name": "badge_category_pill",
-        "kind": "solid",
-        "bg": "#FF007A",
-        "on_bg": "#FFFFFF",
-        "on_bg_muted": "#FFE4F0"
-      },
-      {
-        "name": "email_body_container",
-        "kind": "solid",
-        "bg": "#0F172A",
-        "on_bg": "#FFFFFF",
-        "on_bg_muted": "#CBD5E1"
-      },
-      {
-        "name": "email_inner_card",
-        "kind": "solid",
-        "bg": "#1E293B",
-        "on_bg": "#FFFFFF",
-        "on_bg_muted": "#94A3B8"
-      },
-      {
-        "name": "pdf_hero_banner",
-        "kind": "solid",
-        "bg": "#4F46E5",
-        "on_bg": "#FFFFFF",
-        "on_bg_muted": "#E0E7FF"
-      },
-      {
-        "name": "pdf_stub_container",
-        "kind": "solid",
-        "bg": "#0B0F19",
-        "on_bg": "#F8FAFC",
-        "on_bg_muted": "#94A3B8"
+      "rules": {
+        "headings": "font-bold tracking-tight uppercase leading-none font-heading",
+        "overline": "text-xs font-mono tracking-[0.25em] uppercase text-cyan-400 font-semibold",
+        "body": "text-base font-normal leading-relaxed text-slate-200 font-sans",
+        "caption": "text-sm text-slate-400 font-sans"
       }
-    ],
-    "accent": "#FF007A",
-    "on_accent": "#FFFFFF",
-    "palette": {
-      "sage_navy": "#0A0F1D",
-      "fest_magenta": "#FF007A",
-      "fest_electric_purple": "#7928CA",
-      "fest_amber_gold": "#F59E0B",
-      "fest_cyan": "#06B6D4",
-      "fest_emerald": "#10B981",
-      "fest_dark_card": "#151B28",
-      "fest_light_surface": "#FFFFFF",
-      "fest_ticket_border": "#334155"
-    }
-  },
-  "typography": {
-    "font_heading": "'Space Grotesk Variable', sans-serif",
-    "font_body": "'Plus Jakarta Sans Variable', sans-serif",
-    "font_mono": "'JetBrains Mono Variable', monospace",
-    "scale_px": {
-      "display": 56,
-      "h1": 42,
-      "h2": 32,
-      "h3": 24,
-      "body": 16,
-      "caption": 14
     },
-    "letter_spacing": {
-      "headings": "-0.03em",
-      "ticket_labels": "0.15em",
-      "registration_code": "0.12em"
+    "colors": {
+      "surfaces": [
+        {
+          "name": "page",
+          "kind": "solid",
+          "bg": "#090A0F",
+          "on_bg": "#F8FAFC",
+          "on_bg_muted": "#94A3B8"
+        },
+        {
+          "name": "panel",
+          "kind": "solid",
+          "bg": "#121520",
+          "on_bg": "#F8FAFC",
+          "on_bg_muted": "#94A3B8"
+        },
+        {
+          "name": "card_dark",
+          "kind": "solid",
+          "bg": "#181D2D",
+          "on_bg": "#FFFFFF",
+          "on_bg_muted": "#CBD5E1"
+        },
+        {
+          "name": "glass_surface",
+          "kind": "glass",
+          "contrast_against": "#0F1320",
+          "guarantee": "backdrop-blur-xl bg-slate-950/70 border border-white/10",
+          "on_bg": "#FFFFFF",
+          "on_bg_muted": "#94A3B8"
+        },
+        {
+          "name": "hero",
+          "kind": "image",
+          "contrast_against": "#08090E",
+          "guarantee": "scrim: linear-gradient(to top, rgba(9,10,15,0.95) 0%, rgba(9,10,15,0.7) 50%, rgba(9,10,15,0.4) 100%)",
+          "on_bg": "#FFFFFF",
+          "on_bg_muted": "#CBD5E1",
+          "roles": {
+            "link": "#38BDF8",
+            "error": "#F87171",
+            "success": "#34D399"
+          }
+        },
+        {
+          "name": "badge_cyan",
+          "kind": "solid",
+          "bg": "#083344",
+          "on_bg": "#67E8F9",
+          "on_bg_muted": "#22D3EE"
+        },
+        {
+          "name": "badge_neon_pink",
+          "kind": "solid",
+          "bg": "#500724",
+          "on_bg": "#F472B6",
+          "on_bg_muted": "#EC4899"
+        },
+        {
+          "name": "badge_amber",
+          "kind": "solid",
+          "bg": "#451A03",
+          "on_bg": "#FDE047",
+          "on_bg_muted": "#FBBF24"
+        }
+      ],
+      "accent": "#FF0055",
+      "on_accent": "#FFFFFF",
+      "secondary_accent": "#00F0FF",
+      "on_secondary_accent": "#000000",
+      "amber_accent": "#FFB800"
     }
   },
   "entry_surfaces": {
-    "/": "split hero — festival pass showcase + interactive ticket preview generator left, live PDF/HTML preview switcher and actions right",
-    "/pass/:id": "cinematic mobile ticket pass — holographic branded notch header, high-contrast QR center with security seal, gate instructions footer"
+    "/": "split hero with live countdown timer, holographic festival title + direct registration CTA on left, interactive quick-filter schedule ribbon on right",
+    "/gallery": "curated visual masonry with sticky media category filters (Photos, Video Teasers, Aftermovies) and instant lightbox modal",
+    "/admin": "high-density operations dashboard with sidebar navigation, media CMS manager, active event registrations and scanner monitor",
+    "/admin/media": "interactive media asset manager with image upload, YouTube/Vimeo embed preview, category linking, order reordering and active toggle",
+    "/scanner": "tactical high-contrast dark scanner console with real-time camera viewfinder, manual pass ID input, and pass status validation HUD"
   },
   "visual_enhancers": {
-    "ticket_ticket_stub_notch": "CSS radial cutouts with dashed separator line (border-dashed border-slate-600) between festival details and scannable QR stub",
-    "holographic_foil_strip": "Subtle angled chromatic linear-gradient ribbon (#FF007A, #7928CA, #06B6D4, #F59E0B) with shimmer animation",
-    "qr_quiet_zone_rule": "QR codes must have pure white (#FFFFFF) background with minimum 16px padding quiet zone for instant physical scanning across laser/camera scanners",
-    "official_branding_bar": "Side-by-side authentic co-branding header: SAGE University logo mark with gold typography + EUPHORIA Annual Youth Fest neon badge",
-    "noise_texture": "Subtle 2% SVG grain texture overlay to eliminate sterile digital flatness"
+    "laser_lines": "1px borders with border-slate-800 hover:border-cyan-500/50 transition-colors duration-200",
+    "neon_glow": "shadow-[0_0_25px_rgba(255,0,85,0.35)] for primary actions, shadow-[0_0_20px_rgba(0,240,255,0.25)] for cyan highlights",
+    "mesh_gradient": "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-fuchsia-900/20 via-slate-950/0 to-cyan-900/10",
+    "editorial_ribbon": "Slow kinetic marquee for partner colleges, celebrity guests and event stats",
+    "soundwave_badge": "Subtle animated SVG equalizer bars next to performer names"
   },
-  "component_hierarchy_and_paths": {
-    "digital_react_pass": {
-      "path": "frontend/src/components/pass/DigitalPassCard.tsx",
-      "description": "Interactive mobile-first digital event pass component with flip view, wallet download CTA, live status pill, animated entrance and print mode"
+  "grids_and_layouts": {
+    "hero_section": "grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[85vh] py-12 px-4 md:px-8",
+    "highlights_tetris": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+    "performer_feature": "grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-gradient-to-br from-slate-900 to-slate-950 p-6 md:p-10 rounded-2xl border border-slate-800",
+    "lineup_grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6",
+    "schedule_tabs": "flex flex-col gap-6",
+    "gallery_strip": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",
+    "admin_dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+  },
+  "image_urls": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwyfHxtdXNpYyUyMGZlc3RpdmFsJTIwY29uY2VydCUyMHN0YWdlJTIwY3Jvd2QlMjBuZW9ufGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Euphoria 2026 Mega Concert crowd and illuminated laser stage",
+      "category": "Hero Section / Main Banner"
     },
-    "pdf_generator_engine": {
-      "path": "backend/lib/pdf_generator.py",
-      "description": "Full branded complete PDF ticket generator (ReportLab/Weasyprint/HTML-to-PDF template) with 300DPI layout, SAGE & EUPHORIA header, participant details grid, scannable QR with quiet zone, terms & gate rules, and barcoded tear-stub"
+    "celebrity_guest_aiden": {
+      "url": "https://images.unsplash.com/photo-1526218626217-dc65a29bb444?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwzfHxmZXN0aXZhbCUyMHBlcmZvcm1lciUyMGFydGlzdCUyMGRqJTIwc2luZ2VyJTIwbGl2ZSUyMHN0YWdlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Special Guest Aiden Melisma live soulful stage performance",
+      "category": "Featured Performer / Celebrity Night"
     },
-    "html_email_template": {
-      "path": "backend/lib/email_template.py",
-      "description": "Table-based responsive transactional HTML email template compatible with Gmail, Apple Mail, Outlook, containing branded header, key event details, prominent 'View & Download Secure Pass' CTA button, gate rules and attached PDF notice"
+    "lineup_luna_echo": {
+      "url": "https://images.unsplash.com/photo-1493676304819-0d7a8d026dcf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxmZXN0aXZhbCUyMHBlcmZvcm1lciUyMGFydGlzdCUyMGRqJTIwc2luZ2VyJTIwbGl2ZSUyMHN0YWdlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Luna Echo - Pop & Electronic Headliner",
+      "category": "Lineup Artist 1"
     },
-    "email_and_pass_previewer": {
-      "path": "frontend/src/pages/Home.tsx",
-      "description": "Comprehensive workbench allowing users to customize attendee, switch between Live Digital Pass, Email Client Preview (Gmail/Mobile mode), and PDF Download/Render Preview"
+    "lineup_orion_ryder": {
+      "url": "https://images.unsplash.com/photo-1663668566971-afaa3f07903d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHw0fHxmZXN0aXZhbCUyMHBlcmZvcm1lciUyMGFydGlzdCUyMGRqJTIwc2luZ2VyJTIwbGl2ZSUyMHN0YWdlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Orion Ryder - Rock & Band Headliner",
+      "category": "Lineup Artist 2"
+    },
+    "lineup_electra_nova": {
+      "url": "https://images.unsplash.com/photo-1619229725920-ac8b63b0631a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxmZXN0aXZhbCUyMHBlcmZvcm1lciUyMGFydGlzdCUyMGRqJTIwc2luZ2VyJTIwbGl2ZSUyMHN0YWdlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Electra Nova - Hip-Hop & Beats Producer",
+      "category": "Lineup Artist 3"
+    },
+    "gallery_cultural_dance_1": {
+      "url": "https://images.unsplash.com/photo-1463592177119-bab2a00f3ccb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwxfHxjb2xsZWdlJTIwZmVzdCUyMGRhbmNlJTIwZHJhbWElMjBjdWx0dXJhbCUyMHBlcmZvcm1hbmNlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Move & Groove Classical & Fusion Dance Competitors",
+      "category": "Gallery Cultural Dance"
+    },
+    "gallery_cultural_dance_2": {
+      "url": "https://images.unsplash.com/photo-1764014792668-bc484714744f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwyfHxjb2xsZWdlJTIwZmVzdCUyMGRhbmNlJTIwZHJhbWElMjBjdWx0dXJhbCUyMHBlcmZvcm1hbmNlfGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Solo Classical & Theatrical Drama Performance",
+      "category": "Gallery Theatrical & Solo"
+    },
+    "gallery_crowd_fest_1": {
+      "url": "https://images.unsplash.com/photo-1450044804117-534ccd6e6a3a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHw0fHxtdXNpYyUyMGZlc3RpdmFsJTIwY29uY2VydCUyMHN0YWdlJTIwY3Jvd2QlMjBuZW9ufGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Euphoria Stadium Night Crowd Celebration",
+      "category": "Gallery Atmosphere"
+    },
+    "gallery_stage_lights_2": {
+      "url": "https://images.unsplash.com/photo-1563841930606-67e2bce48b78?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGZlc3RpdmFsJTIwY29uY2VydCUyMHN0YWdlJTIwY3Jvd2QlMjBuZW9ufGVufDB8fHx8MTc4ODQyNjIxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "SAGE Arena Stage Light and Truss Setup",
+      "category": "Gallery Stage Architecture"
     }
   },
-  "email_safe_specifications": {
-    "max_width": "600px",
-    "layout_mode": "Single-column fluid table layout with nested 100% width cells",
-    "cta_button": {
-      "min_height": "48px",
-      "min_width": "220px",
-      "background_color": "#FF007A",
-      "text_color": "#FFFFFF",
-      "border_radius": "8px",
-      "font_weight": "bold"
-    },
-    "attachment_notice": "Highlighted callout box notifying user that their official printable PDF pass with entry barcode is attached to the email"
+  "motion_and_interactions": {
+    "scroll_behavior": "Smooth inertia with subtle stagger entrances for card arrays",
+    "card_hover": "transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease; hover:-translate-y-1.5",
+    "button_press": "active:scale-[0.98] transition-transform duration-100",
+    "modal_animation": "motion.div entrance from scale-95 opacity-0 to scale-100 opacity-100",
+    "video_embed_player": "Custom thumbnail overlay with glowing Play button triggering lazy YouTube / Vimeo iframe modal"
   },
-  "pdf_pass_specifications": {
-    "dimensions": "Mobile ticket ratio (Portrait, approx 100mm x 210mm or scaled A4 half-sheet)",
-    "color_mode": "RGB / High-contrast print-ready",
-    "sections": [
-      "Top Header: SAGE UNIVERSITY & EUPHORIA ANNUAL YOUTH FESTIVAL Logos",
-      "Banner: Event Title, Category (Music/Dance/Technical/Drama/Sports), Pass Tier (VIP/Delegate/Participant)",
-      "Attendee Block: Full Name, Registration ID, Roll/College, Category, Date & Time, Hall/Stage Venue",
-      "Security QR Block: Sharp black-on-white 200x200px QR with 4-module quiet zone + Security Hash Code",
-      "Gate Instructions: Valid ID mandatory, non-transferable, entry gates close 15 min prior, barcode scan rule",
-      "Footer: Official seal, authorized signature line, helpline email & phone"
-    ]
+  "accessibility_guidelines": {
+    "wcag_compliance": "WCAG 2.1 AA compliant text contrast ratios (4.5:1 for normal text, 3:1 for large text)",
+    "data_testids": "Every CTA, filter tab, video modal trigger, admin media row, image card, schedule selector, and form control MUST have explicit data-testid attributes (e.g. data-testid='hero-register-btn', data-testid='schedule-day-tab-1', data-testid='media-item-delete-btn')",
+    "keyboard_nav": "Full tab and enter/space trigger support on interactive cards and lightbox dialogs",
+    "reduced_motion": "Respect @media (prefers-reduced-motion) by gracefully disabling glow pulsing and aggressive transforms"
   },
-  "motion": {
-    "card_tilt": "Subtle 3D gyroscope/mouse hover tilt effect on digital card using motion/react",
-    "qr_scan_line": "Glowing laser scan-bar moving over QR on digital pass to indicate active live validity",
-    "tab_transitions": "Smooth layoutId animated sliding pill for switcher tabs"
-  },
-  "accessibility": {
-    "color_contrast": "All body copy exceeds 4.5:1 ratio (white #FFFFFF and slate-200 #CBD5E1 against #161B26 and #0F172A). Text over QR is dark slate #090D16 on #FFFFFF.",
-    "screen_reader": "Aria labels for pass status, registration code copy button, and download triggers",
-    "data_testid_convention": {
-      "pass_container": "digital-pass-container",
-      "participant_name": "pass-participant-name",
-      "registration_id": "pass-reg-id",
-      "event_category": "pass-event-category",
-      "qr_code_image": "pass-qr-code",
-      "download_pdf_btn": "pass-download-pdf-button",
-      "send_email_btn": "pass-send-email-button",
-      "email_preview_frame": "email-preview-container",
-      "pdf_preview_frame": "pdf-preview-container"
-    }
-  },
-  "image_urls": [
+  "component_hierarchy": [
     {
-      "category": "festival_banner_background",
-      "description": "Vibrant youth college music and cultural festival stage lighting and audience",
-      "url": "https://images.unsplash.com/photo-1506157786151-b8491531f063?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwyfHxjb2xsZWdlJTIwZmVzdGl2YWwlMjBjb25jZXJ0JTIwY3Jvd2QlMjB5b3V0aHxlbnwwfHx8fDE3ODQyNTM4MzN8MA&ixlib=rb-4.1.0&q=85"
+      "name": "Navbar",
+      "path": "frontend/src/components/Navbar.tsx",
+      "description": "Sticky crystal glass header with SAGE Euphoria 2026 branding, navigation links (Events, Highlights, Schedule, Lineup, Gallery), and Live Register CTA button."
     },
     {
-      "category": "live_concert_lights",
-      "description": "High energy festival stage illumination",
-      "url": "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3"
+      "name": "HeroSection",
+      "path": "frontend/src/components/HeroSection.tsx",
+      "description": "Hero banner with countdown clock (April 22-24, 2026), dynamic event counter pill, quick venue details (SAGE University Indore), and video teaser launch button."
     },
     {
-      "category": "crowd_cheering",
-      "description": "Excited college crowd cheering at annual youth fest",
-      "url": "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwzfHxjb2xsZWdlJTIwZmVzdGl2YWwlMjBjb25jZXJ0JTIwY3Jvd2QlMjB5b3V0aHxlbnwwfHx8fDE3ODQyNTM4MzN8MA&ixlib=rb-4.1.0&q=85"
+      "name": "FestivalHighlights",
+      "path": "frontend/src/components/FestivalHighlights.tsx",
+      "description": "Tetris-style category showcase (Cultural, Technical, Literary, Management & Marketing, Agro & Science) with dynamic badge counters and activity lists."
+    },
+    {
+      "name": "FeaturedPerformer",
+      "path": "frontend/src/components/FeaturedPerformer.tsx",
+      "description": "Spotlight section for Special Guest Aiden Melisma featuring Grammy/Billboard credentials, sound snippet player / video teaser preview."
+    },
+    {
+      "name": "LineupGrid",
+      "path": "frontend/src/components/LineupGrid.tsx",
+      "description": "Headliner cards (Luna Echo, Orion Ryder, Electra Nova) with genre tags, streaming icons, and instant set-time info."
+    },
+    {
+      "name": "ScheduleSection",
+      "path": "frontend/src/components/ScheduleSection.tsx",
+      "description": "Interactive Day 1 (April 22), Day 2 (April 23), Day 3 (April 24) schedule explorer with event filters, venues, timing, and direct event register shortcuts."
+    },
+    {
+      "name": "GalleryStrip",
+      "path": "frontend/src/components/GalleryStrip.tsx",
+      "description": "Dynamic homepage media reel displaying active images & video previews fetched from the Admin Media API with a 'View All Media' button."
+    },
+    {
+      "name": "GalleryPage",
+      "path": "frontend/src/pages/Gallery.tsx",
+      "description": "Dedicated media gallery page with filter tabs (All, Photos, Video Teasers, Competitions, Concert Night), video embedding (YouTube/Vimeo), and full-screen lightbox."
+    },
+    {
+      "name": "AdminMediaManager",
+      "path": "frontend/src/components/admin/AdminMediaManager.tsx",
+      "description": "Dynamic CMS panel for festival organizers to upload images or input YouTube/Vimeo video URLs, write captions, assign event associations, set sort orders, and toggle active status."
+    },
+    {
+      "name": "ScannerInterface",
+      "path": "frontend/src/pages/Scanner.tsx",
+      "description": "Preserved high-speed operational QR/Pass scanner interface with real-time pass validation and attendance logging."
     }
   ],
   "instructions_to_main_agent": [
-    "1. Replace plain text emails with a rich, modern, responsive table-based HTML email containing SAGE University and EUPHORIA branding, participant details, date, venue, status pill, prominent CTA to view the online digital pass, and gate instructions.",
-    "2. Replace QR-only attachments with a complete, colourful, printable mobile-ticket PDF that embeds the full pass design: official logos, participant name, event name, registration number, category badge, event schedule/venue, security barcode/QR with guaranteed white quiet zone, and gate rules.",
-    "3. Upgrade the frontend React digital pass into an ultra-attractive, vibrant youth-festival ticket (modeled with ticket notches, neon accents #FF007A / #7928CA / #06B6D4, holographic foil effect, live scan bar, and one-click PDF download & email trigger).",
-    "4. Provide an interactive live preview playground on the frontend allowing testing of the React Pass, HTML Email view, and PDF pass download with test sample attendee data.",
-    "5. Ensure strict QR contrast (solid black QR modules on clean white box with >=16px quiet zone) so physical scanner guns and phone cameras work with 100% reliability at festival gates.",
-    "6. Keep SAGE University and EUPHORIA branding authentic and prominent across all 3 channels (React app, HTML email, PDF attachment)."
-  ]
+    "1. Hybrid Fullstack Execution: Maintain Vite/React 19 frontend (/frontend) while synchronizing dynamic gallery & video data models in FastAPI backend (/backend/routers/media.py & /backend/models/media.py) AND keeping CodeIgniter package / views updated.",
+    "2. Media CMS Dynamic Contract: Provide dynamic API endpoints GET /api/media (public active items with filters), POST /api/media (admin create), PUT /api/media/{id} (admin update order/caption/active status), DELETE /api/media/{id} (admin remove).",
+    "3. Video Support: Handle both direct image uploads / URLs and embedded video providers (YouTube, Vimeo, MP4 URLs) with automatic thumbnail parsing and embedded responsive player.",
+    "4. Theme & Aesthetic: Implement dark mode by default using Deep Obsidian (#090A0F) with hyper-energetic Neon Pink (#FF0055), Cyber Cyan (#00F0FF), and Amber (#FFB800) accents. Avoid generic SaaS blue or boring plain cards.",
+    "5. Testing & Verification: Ensure all interactive triggers have kebab-case data-testid attributes. Test public landing, gallery lightbox, video playback modal, admin media CRUD, and scanner flows before completion."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "do_not_center_app": "Avoid app-wide text-align: center; maintain structured asymmetric alignment with generous spacing.",
+    "no_universal_transition": "Do not use 'transition: all'; specify transition-transform, transition-opacity, transition-colors individually.",
+    "font_policy": "Import Space Grotesk Variable for headers, DM Sans Variable for body, JetBrains Mono Variable for tags/monospaced stats. Never use Inter for headers.",
+    "toast_usage": "Use sonner for instant toast feedback upon pass scan, registration submit, or media item update."
+  }
 }

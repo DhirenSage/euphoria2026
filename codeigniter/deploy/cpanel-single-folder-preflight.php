@@ -7,7 +7,7 @@
  */
 
 $root = __DIR__;
-$requiredExtensions = ['curl', 'dom', 'fileinfo', 'gd', 'intl', 'mbstring', 'mysqli', 'openssl', 'zip'];
+$requiredExtensions = ['curl', 'dom', 'fileinfo', 'gd', 'intl', 'mbstring', 'mysqli', 'openssl', 'simplexml', 'zip'];
 $checks = [
     'PHP 8.2 or newer' => version_compare(PHP_VERSION, '8.2.0', '>='),
     'Application source exists' => is_file($root . '/app/Config/Paths.php'),

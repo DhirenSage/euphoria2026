@@ -53,7 +53,7 @@ Before changing anything:
 In **MultiPHP Manager** or **Select PHP Version**, assign PHP 8.2 or newer to `sageuniversity.in` and enable:
 
 ```text
-curl  dom  fileinfo  gd  intl  mbstring  mysqli  openssl  zip
+curl  dom  fileinfo  gd  intl  mbstring  mysqli  openssl  simplexml  zip
 ```
 
 Recommended PHP limits:
@@ -90,7 +90,7 @@ Confirm at least these tables exist:
 
 ```text
 migrations, users, roles, user_roles, programmes, categories, events,
-event_days, registration_fields, registrations, payments, qr_tokens,
+event_days, registration_fields, registrations, payments, qr_tokens, media_items,
 attendance, scan_attempts, gates, scanner_assignments, email_jobs,
 email_logs, audit_logs
 ```
@@ -195,7 +195,15 @@ Files:       644
 writable/:   755 or 775, depending on PHP ownership
 ```
 
-Ensure these are writable by PHP: `writable/cache`, `logs`, `session`, `uploads`, and `passes`. Do not leave any path at `777`.
+Ensure these are writable by PHP: `writable/cache`, `logs`, `session`, `uploads`, `uploads/media`, and `passes`. Do not leave any path at `777`.
+
+### Dynamic Gallery & Video
+
+After Admin login, open **Gallery & video**. Admin/Content Manager can upload JPG/PNG/WEBP images or add YouTube, Vimeo, MP4, and WEBM URLs; each item has a homepage section, caption, optional event, display order, and active switch. Uploaded images are stored under protected `writable/uploads/media` and served through the controlled `/media/file/{id}` route.
+
+### Bulk complimentary passes
+
+Open **Bulk passes**, download the template, and upload a `.csv` or `.xlsx` list with `participant_name`, `mobile`, `institute_name`, `email`, and `event_name` (or safer `event_slug`). Valid rows are confirmed as complimentary, receive individual QR passes, and enter the email queue. The one-minute cron in section 13 is required for delivery.
 
 ## 10. Replace demo accounts before launch
 
@@ -298,10 +306,10 @@ Do not announce the site until this real flow passes:
 5. Browser redirect alone leaves payment pending; valid callback confirms it.
 6. Registration ID, QR, digital pass, and one-page PDF are generated.
 7. Cron changes the pass email job from `pending` to `sent`; the complete PDF arrives.
-8. Assigned Scanner logs in over HTTPS and camera/manual token input works.
-9. First scan is allowed; same QR/day is rejected as duplicate.
+8. Any active Scanner logs in over HTTPS and immediately sees camera/manual token input—there is no event, day, assignment, or gate selection.
+9. The QR automatically resolves its event and today's configured event day; first scan is allowed and same QR/day is rejected as duplicate.
 10. The same QR on a second configured event day is allowed.
-11. Wrong-event, unpaid, invalid, and revoked passes are denied.
+11. Before-date, expired, unpaid, invalid, and revoked passes are denied; a multi-day pass is allowed once on each configured date.
 12. Dashboard totals and CSV attendance export contain the entry.
 
 ## 16. Production checklist
@@ -317,6 +325,8 @@ Do not announce the site until this real flow passes:
 - [ ] SMTP plus cron delivery is proven in `email_jobs`/`email_logs`
 - [ ] Writable permissions work without `777`
 - [ ] Admin and Scanner links remain absent from public navigation
+- [ ] Homepage and Gallery show only active, ordered Admin media; image upload and video playback were checked
+- [ ] CSV and XLSX complimentary-pass imports create QR passes and queue participant emails
 - [ ] Database/files backups and rollback copy exist
 
 ## 17. Backups, updates, and rollback without SSH

@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
         $db = $this->db;
         if ($db->table('roles')->where('name','SUPER_ADMIN')->countAllResults() > 0) {
             $this->call('RegistrationCatalogueSeeder');
+            $this->seedMedia($now);
             return;
         }
         $db->table('roles')->insertBatch(array_map(fn($name)=>['name'=>$name], ['SUPER_ADMIN','PROGRAMME_ADMIN','EVENT_ADMIN','FINANCE','SCANNER','CONTENT_MANAGER','REPORT_VIEWER']));
@@ -33,5 +34,21 @@ class DatabaseSeeder extends Seeder
         $db->table('permissions')->insertBatch(array_map(fn($name)=>['name'=>$name,'description'=>ucwords(str_replace('.',' ',$name))],$permissions));
         $db->table('email_templates')->insert(['template_key'=>'event_pass','subject'=>'Euphoria 2026 – Your Event Registration is Confirmed','body_html'=>'Your registration is confirmed. Please keep the attached QR pass ready at the entry gate.','is_active'=>1,'created_at'=>$now,'updated_at'=>$now]);
         $this->call('RegistrationCatalogueSeeder');
+        $this->seedMedia($now);
+    }
+
+    private function seedMedia(string $now): void
+    {
+        if (!$this->db->tableExists('media_items') || $this->db->table('media_items')->countAllResults() > 0) return;
+        $this->db->table('media_items')->insertBatch([
+            ['media_type'=>'image','section'=>'hero','title'=>'EUPHORIA main stage','caption'=>'Experience the energy. Live the Euphoria.','source_url'=>'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1900&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1900&q=85','video_provider'=>null,'display_order'=>1,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'video','section'=>'featured','title'=>'Celebrity Pro Night','caption'=>'A live headline performance built for the EUPHORIA main stage.','source_url'=>'https://www.youtube.com/watch?v=0O2aH4XLbto','thumbnail_url'=>'https://images.unsplash.com/photo-1526218626217-dc65a29bb444?auto=format&fit=crop&w=1400&q=85','video_provider'=>'youtube','display_order'=>1,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'lineup','title'=>'Live Music','caption'=>'Main-stage sound and student performances.','source_url'=>'https://images.unsplash.com/photo-1493676304819-0d7a8d026dcf?auto=format&fit=crop&w=1000&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1493676304819-0d7a8d026dcf?auto=format&fit=crop&w=1000&q=85','video_provider'=>null,'display_order'=>1,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'lineup','title'=>'Battle of Bands','caption'=>'Amplified energy from campus bands.','source_url'=>'https://images.unsplash.com/photo-1663668566971-afaa3f07903d?auto=format&fit=crop&w=1000&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1663668566971-afaa3f07903d?auto=format&fit=crop&w=1000&q=85','video_provider'=>null,'display_order'=>2,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'lineup','title'=>'Dance Arena','caption'=>'Movement, colour and competition.','source_url'=>'https://images.unsplash.com/photo-1619229725920-ac8b63b0631a?auto=format&fit=crop&w=1000&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1619229725920-ac8b63b0631a?auto=format&fit=crop&w=1000&q=85','video_provider'=>null,'display_order'=>3,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'gallery','title'=>'Cultural stage','caption'=>'Move & Groove performances','source_url'=>'https://images.unsplash.com/photo-1463592177119-bab2a00f3ccb?auto=format&fit=crop&w=1200&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1463592177119-bab2a00f3ccb?auto=format&fit=crop&w=1200&q=85','video_provider'=>null,'display_order'=>1,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'gallery','title'=>'Festival crowd','caption'=>'One campus, one shared frequency','source_url'=>'https://images.unsplash.com/photo-1450044804117-534ccd6e6a3a?auto=format&fit=crop&w=1200&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1450044804117-534ccd6e6a3a?auto=format&fit=crop&w=1200&q=85','video_provider'=>null,'display_order'=>2,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+            ['media_type'=>'image','section'=>'gallery','title'=>'Stage lights','caption'=>'EUPHORIA after dark','source_url'=>'https://images.unsplash.com/photo-1563841930606-67e2bce48b78?auto=format&fit=crop&w=1200&q=85','thumbnail_url'=>'https://images.unsplash.com/photo-1563841930606-67e2bce48b78?auto=format&fit=crop&w=1200&q=85','video_provider'=>null,'display_order'=>3,'is_active'=>1,'created_at'=>$now,'updated_at'=>$now],
+        ]);
     }
 }

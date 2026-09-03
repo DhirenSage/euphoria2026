@@ -81,18 +81,9 @@ def test_dashboard_counters_and_recent_scans_update_after_registration_and_scan(
     assert pass_resp.status_code == 200, pass_resp.text
     token = pass_resp.json()["qr_token"]
 
-    # Scanner assignments are now enforced by event/day/gate; assign the demo
-    # scanner to this fixture event/day/gate before exercising the scan flow.
-    assign_resp = admin_client.post(
-        "/admin/staff/scanner-demo/assignments",
-        json={"event_id": event["id"], "event_day_ids": [event["event_days"][0]["id"]], "gates": [GATE]},
-    )
-    assert assign_resp.status_code == 200, assign_resp.text
-
-    scan_resp = scanner_client.post(
-        "/scanner/scan",
-        json={"token": token, "event_id": event["id"], "event_day_id": event["event_days"][0]["id"], "gate": GATE},
-    )
+    # Scanning is now fully automatic (no event/day/gate/assignment selection) --
+    # the scanner just posts the raw token and the server auto-detects the event/day.
+    scan_resp = scanner_client.post("/scanner/scan", json={"token": token})
     assert scan_resp.status_code == 200, scan_resp.text
     assert scan_resp.json()["ok"] is True
 

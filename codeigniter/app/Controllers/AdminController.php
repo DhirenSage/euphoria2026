@@ -140,20 +140,26 @@ class AdminController extends BaseController
 
     public function attendance()
     {
-        $entries=db_connect()->table('scan_attempts a')->select('a.*,r.participant_name,r.registration_id,e.name AS event_name,g.name AS gate_name,u.name AS scanner_name,d.label AS day_label')->join('registrations r','r.id=a.registration_id','left')->join('events e','e.id=a.event_id','left')->join('gates g','g.id=a.gate_id','left')->join('users u','u.id=a.scanner_user_id','left')->join('event_days d','d.id=a.event_day_id','left')->orderBy('a.attempted_at','DESC')->get(200)->getResultArray();
-        return $this->render('admin/attendance', ['entries'=>$entries,'title'=>'Live attendance']);
+        $db=db_connect();$date=(string)$this->request->getGet('date');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))$date=date('Y-m-d');$eventId=(int)$this->request->getGet('event_id');$status=(string)$this->request->getGet('status');$events=$db->table('events')->select('id,name')->orderBy('name','ASC')->get()->getResultArray();
+        $builder=$db->table('registrations r')->select('r.registration_id,r.participant_name,r.email,r.mobile,r.college,e.id event_id,e.name event_name,d.id event_day_id,d.label event_day_label,d.event_date,a.entry_time,u.name scanner_name')->join('events e','e.id=r.event_id')->join('event_days d','d.event_id=e.id AND d.event_date='.$db->escape($date).' AND d.is_active=1')->join('attendance a','a.registration_id=r.id AND a.event_day_id=d.id','left')->join('users u','u.id=a.scanner_user_id','left')->where('r.status','confirmed');if($eventId)$builder->where('e.id',$eventId);if($status==='entered')$builder->where('a.id IS NOT NULL',null,false);if($status==='not_entered')$builder->where('a.id IS NULL',null,false);$roster=$builder->orderBy('e.name','ASC')->orderBy('r.participant_name','ASC')->get()->getResultArray();
+        $summaryBuilder=$db->table('registrations r')->select('COUNT(*) total, SUM(CASE WHEN a.id IS NULL THEN 0 ELSE 1 END) entered',false)->join('event_days d','d.event_id=r.event_id AND d.event_date='.$db->escape($date).' AND d.is_active=1')->join('attendance a','a.registration_id=r.id AND a.event_day_id=d.id','left')->where('r.status','confirmed');if($eventId)$summaryBuilder->where('r.event_id',$eventId);$summary=$summaryBuilder->get()->getRowArray()?:['total'=>0,'entered'=>0];
+        $entries=$db->table('scan_attempts a')->select('a.*,r.participant_name,r.registration_id,e.name AS event_name,u.name AS scanner_name,d.label AS day_label')->join('registrations r','r.id=a.registration_id','left')->join('events e','e.id=a.event_id','left')->join('users u','u.id=a.scanner_user_id','left')->join('event_days d','d.id=a.event_day_id','left')->where('DATE(a.attempted_at)',$date)->orderBy('a.attempted_at','DESC')->get(100)->getResultArray();
+        return $this->render('admin/attendance',['entries'=>$entries,'roster'=>$roster,'events'=>$events,'selectedDate'=>$date,'selectedEvent'=>$eventId,'selectedStatus'=>$status?:'all','summary'=>['total'=>(int)$summary['total'],'entered'=>(int)$summary['entered'],'not_entered'=>(int)$summary['total']-(int)$summary['entered']],'title'=>'Date-wise attendance','active'=>'attendance']);
     }
 
     public function scanners()
     {
-        $this->requireAny(['SUPER_ADMIN','PROGRAMME_ADMIN','EVENT_ADMIN']);
-        $db=db_connect();
-        $scanners=$db->table('users u')->select('u.id,u.name,u.email')->join('user_roles ur','ur.user_id=u.id')->join('roles r','r.id=ur.role_id')->where('r.name','SCANNER')->where('u.is_active',1)->orderBy('u.name')->get()->getResultArray();
-        $events=$db->table('events')->whereIn('status',['scheduled','registration_open','live'])->orderBy('name')->get()->getResultArray();
-        $days=$db->table('event_days')->where('is_active',1)->orderBy('event_date')->get()->getResultArray();
-        $gates=$db->table('gates g')->select('g.*,p.name AS programme_name')->join('programmes p','p.id=g.programme_id')->orderBy('g.name')->get()->getResultArray();
-        $assignments=$db->table('scanner_assignments sa')->select('sa.*,u.name AS scanner_name,u.email,e.name AS event_name,d.label AS day_label,d.event_date,g.name AS gate_name')->join('users u','u.id=sa.user_id')->join('events e','e.id=sa.event_id')->join('event_days d','d.id=sa.event_day_id')->join('gates g','g.id=sa.gate_id')->orderBy('sa.created_at','DESC')->get()->getResultArray();
-        return $this->render('admin/scanners',compact('scanners','events','days','gates','assignments')+['programmes'=>$db->table('programmes')->where('status !=','archived')->get()->getResultArray(),'title'=>'Scanner access']);
+        $this->requireAny(['SUPER_ADMIN']);$db=db_connect();$scanners=$db->table('users u')->select('u.id,u.name,u.email,u.is_active,u.created_at')->join('user_roles ur','ur.user_id=u.id')->join('roles r','r.id=ur.role_id')->where('r.name','SCANNER')->orderBy('u.name','ASC')->get()->getResultArray();return $this->render('admin/scanners',['scanners'=>$scanners,'title'=>'Scanner users','active'=>'scanners']);
+    }
+
+    public function storeScanner()
+    {
+        $this->requireAny(['SUPER_ADMIN']);$name=trim((string)$this->request->getPost('name'));$email=strtolower(trim((string)$this->request->getPost('email')));$password=(string)$this->request->getPost('password');if(mb_strlen($name)<2||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($password)<12)return redirect()->back()->withInput()->with('error','Enter a name, unique email and password of at least 12 characters.');$db=db_connect();if($db->table('users')->where('email',$email)->countAllResults())return redirect()->back()->with('error','That login email already exists.');$db->transStart();$db->table('users')->insert(['name'=>$name,'email'=>$email,'password_hash'=>password_hash($password,PASSWORD_DEFAULT),'is_active'=>1,'created_at'=>date('Y-m-d H:i:s'),'updated_at'=>date('Y-m-d H:i:s')]);$userId=(int)$db->insertID();$roleId=(int)$db->table('roles')->where('name','SCANNER')->get()->getRow('id');$db->table('user_roles')->insert(['user_id'=>$userId,'role_id'=>$roleId]);$db->transComplete();(new AuditService())->record('scanner.created','users',(string)$userId,['email'=>$email]);return redirect()->back()->with('message','Scanner login created. It can scan every event automatically.');
+    }
+
+    public function toggleScanner(int $id)
+    {
+        $this->requireAny(['SUPER_ADMIN']);$db=db_connect();$scanner=$db->table('users u')->select('u.id,u.is_active')->join('user_roles ur','ur.user_id=u.id')->join('roles r','r.id=ur.role_id')->where(['u.id'=>$id,'r.name'=>'SCANNER'])->get()->getRowArray();if(!$scanner)throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();$active=(int)!((int)$scanner['is_active']);$db->table('users')->where('id',$id)->update(['is_active'=>$active,'updated_at'=>date('Y-m-d H:i:s')]);(new AuditService())->record('scanner.'.($active?'enabled':'disabled'),'users',(string)$id);return redirect()->back()->with('message','Scanner access updated.');
     }
 
     public function storeGate()

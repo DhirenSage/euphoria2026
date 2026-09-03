@@ -10,6 +10,7 @@ from typing import List
 import uuid
 from datetime import datetime
 from lib.catalogue import ensure_catalogue
+from routers.media import ensure_media, router as media_router
 from routers.euphoria import router as euphoria_router
 
 
@@ -24,6 +25,7 @@ from lib.db import client, db
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await ensure_catalogue(db)
+    await ensure_media()
     yield
     client.close()
 
@@ -62,6 +64,7 @@ async def get_status_checks():
     return [StatusCheck(**status_check) for status_check in status_checks]
 
 api_router.include_router(euphoria_router)
+api_router.include_router(media_router)
 
 app.add_middleware(
     CORSMiddleware,

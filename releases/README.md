@@ -14,7 +14,9 @@ The full step-by-step handbook is `/app/codeigniter/CPANEL_SINGLE_FOLDER_DEPLOYM
 
 - Production dependency bundle contains `vendor/autoload.php` and excludes PHPUnit/dev dependencies
 - ZIP contains the root front controller, hardened `.htaccess`, assets, application source, empty writable directories, environment template, and temporary preflight checker
-- SQL re-import created 35 tables, 37 events, two development-only users, and all four migration records
+- SQL re-import creates 36 tables, 37 events, eight starter media items, two development-only users, and all five migration records
 - The packaged root, Events page, and API health endpoint booted successfully against the imported database; an unknown route returned 404
+
+This release also includes automatic event/day QR routing with no gate selector, simple scanner-user creation, date-wise complete attendance rosters, CSV/XLSX complimentary pass generation, and Admin-managed homepage/gallery images and video URLs.
 
 Live Easebuzz callback, SMTP delivery, cron, HTTPS camera permission, and Apache rewrite behavior must still be validated on the actual cPanel host.

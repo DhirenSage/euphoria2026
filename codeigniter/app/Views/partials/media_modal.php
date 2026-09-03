@@ -1,0 +1,1 @@
+<dialog class="media-modal" data-media-modal data-testid="media-lightbox"><div class="media-modal-panel"><button class="media-modal-close" type="button" data-media-close data-testid="media-lightbox-close">×</button><div data-media-player></div><div class="media-modal-copy"><span data-media-section></span><h2 data-media-title></h2><p data-media-caption></p></div></div></dialog>

@@ -46,6 +46,28 @@ final class RegistrationService
         return ['registration' => [...$row, 'id' => $registrationDbId], 'token' => $rawToken, 'pass_access' => $passAccess];
     }
 
+    public function createComplimentary(array $event, array $input): array
+    {
+        $this->db->transStart();
+        $lockedEvent = $this->db->query('SELECT * FROM events WHERE id = ? FOR UPDATE', [(int)$event['id']])->getRowArray();
+        if (!$lockedEvent || in_array($lockedEvent['status'], ['cancelled','completed','archived'], true)) throw new RuntimeException('This event cannot receive complimentary passes.');
+        $email = strtolower(trim((string)$input['email']));
+        if ($this->db->table('registrations')->where(['event_id'=>$lockedEvent['id'], 'email'=>$email])->where('status !=', 'cancelled')->countAllResults()) throw new RuntimeException('This email already has an active registration for this event.');
+        $registrationId = $this->nextRegistrationId();
+        $now = date('Y-m-d H:i:s');
+        $passAccess = bin2hex(random_bytes(24));
+        $row = ['event_id'=>$lockedEvent['id'], 'registration_id'=>$registrationId, 'participant_name'=>trim((string)$input['participant_name']), 'father_name'=>'', 'email'=>$email, 'mobile'=>trim((string)$input['mobile']), 'age'=>null, 'college'=>trim((string)$input['college']), 'city'=>trim((string)($input['city']??'')), 'participant_affiliation'=>($input['participant_affiliation']??'')==='sageian'?'sageian':'non_sageian', 'registration_type'=>'individual', 'team_name'=>null, 'total_amount'=>0, 'status'=>'confirmed', 'qr_status'=>'active', 'pass_access_hash'=>hash('sha256',$passAccess), 'pass_access_ciphertext'=>base64_encode(service('encrypter')->encrypt($passAccess)), 'created_at'=>$now, 'updated_at'=>$now];
+        $this->db->table('registrations')->insert($row);
+        $registrationDbId = (int)$this->db->insertID();
+        $rawToken = 'EUPHORIA-' . bin2hex(random_bytes(20));
+        $this->db->table('qr_tokens')->insert(['registration_id'=>$registrationDbId, 'token_hash'=>hash('sha256',$rawToken), 'token_hint'=>substr($rawToken,-8), 'token_ciphertext'=>base64_encode(service('encrypter')->encrypt($rawToken)), 'status'=>'active', 'created_at'=>$now]);
+        $this->db->table('payments')->insert(['registration_id'=>$registrationDbId, 'txnid'=>'COMP-'.$registrationId, 'amount'=>0, 'productinfo'=>(string)env('EASEBUZZ_PRODUCTINFO','euphoria2026'), 'gateway'=>'complimentary', 'status'=>'success', 'paid_at'=>$now, 'created_at'=>$now, 'updated_at'=>$now]);
+        $this->db->transComplete();
+        if ($this->db->transStatus() === false) throw new RuntimeException('Could not create complimentary pass.');
+        (new EmailQueueService())->enqueue($registrationDbId);
+        return ['registration'=>[...$row, 'id'=>$registrationDbId], 'token'=>$rawToken, 'pass_access'=>$passAccess];
+    }
+
     private function nextRegistrationId(): string
     {
         $key = 'euphoria-2026';
