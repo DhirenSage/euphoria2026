@@ -18,6 +18,8 @@ Operations now include role-based staff accounts (`admin`, `event_admin`, `finan
 
 The scanner includes success/error sound, vibration, camera torch capability checks, and fullscreen controls. Hardware-dependent controls degrade to clear fallback messages while QR image upload and manual token verification remain available.
 
+Digital pass delivery uses one cohesive colourful youth-festival design across three surfaces. The React pass is a responsive mobile ticket with official logos, category/event hero, participant details, payment/pass status, event date/time, venue, institution, a high-contrast scannable QR, security code, and entry instructions. `/api/passes/{registration-id}/pdf` generates a complete mobile-ticket PDF attachment with the same details and QR. Pass resend now sends a table-based branded HTML email with a secure CTA and the complete PDF; the previous QR-only PNG attachment is no longer used.
+
 Every event card links to `/events/{event-slug}`. Event records include a banner, full description, date/time, deadline, venue, eligibility, fee, capacity, registration/team configuration, schedule, rules, prizes, and coordinator details. The detail-page Register Now CTA opens the shared registration form with that event preselected.
 
 ## Roles

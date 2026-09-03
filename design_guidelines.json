@@ -1,99 +1,201 @@
 {
-  "theme_strategy": {
-    "mode": "Dark Theme (Electric & Neon Archetype)",
-    "vibe": "High-energy, premium youth-festival, raw, immersive."
-  },
-  "typography": {
-    "headings": {
-      "font": "Cabinet Grotesk or Unbounded",
-      "style": "Bold, extended, tracking-tighter, fluid scaling (up to text-6xl for hero). NEVER center-align."
-    },
-    "body": {
-      "font": "Outfit or Manrope",
-      "style": "Clean, geometric, text-base, leading-relaxed."
-    },
-    "data_logistics": {
-      "font": "JetBrains Mono",
-      "style": "Uppercase, tracking-[0.2em], text-sm. Used for time, date, venue, and QR pass IDs."
+  "theme": "vibrant-youth-festival",
+  "archetype": "ARCHETYPE 6: VIBRANT PLAY + ELECTRIC FESTIVAL (High contrast neon-punch with structured tickets)",
+  "colors": {
+    "surfaces": [
+      {
+        "name": "page",
+        "kind": "solid",
+        "bg": "#0D0F17",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "pass_ticket_card",
+        "kind": "solid",
+        "bg": "#161B26",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#CBD5E1"
+      },
+      {
+        "name": "ticket_stub_qr_zone",
+        "kind": "solid",
+        "bg": "#FFFFFF",
+        "on_bg": "#090D16",
+        "on_bg_muted": "#475569"
+      },
+      {
+        "name": "badge_verified_pill",
+        "kind": "solid",
+        "bg": "#10B981",
+        "on_bg": "#062817",
+        "on_bg_muted": "#064E3B"
+      },
+      {
+        "name": "badge_category_pill",
+        "kind": "solid",
+        "bg": "#FF007A",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#FFE4F0"
+      },
+      {
+        "name": "email_body_container",
+        "kind": "solid",
+        "bg": "#0F172A",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#CBD5E1"
+      },
+      {
+        "name": "email_inner_card",
+        "kind": "solid",
+        "bg": "#1E293B",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "pdf_hero_banner",
+        "kind": "solid",
+        "bg": "#4F46E5",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#E0E7FF"
+      },
+      {
+        "name": "pdf_stub_container",
+        "kind": "solid",
+        "bg": "#0B0F19",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      }
+    ],
+    "accent": "#FF007A",
+    "on_accent": "#FFFFFF",
+    "palette": {
+      "sage_navy": "#0A0F1D",
+      "fest_magenta": "#FF007A",
+      "fest_electric_purple": "#7928CA",
+      "fest_amber_gold": "#F59E0B",
+      "fest_cyan": "#06B6D4",
+      "fest_emerald": "#10B981",
+      "fest_dark_card": "#151B28",
+      "fest_light_surface": "#FFFFFF",
+      "fest_ticket_border": "#334155"
     }
   },
-  "colors": {
-    "background_primary": "#0A0A0A",
-    "background_secondary": "#121212",
-    "surface": "#1A1A1A",
-    "brand_primary": "#EAB308",
-    "brand_secondary": "#EC4899",
-    "accent_success": "#22C55E",
-    "accent_error": "#EF4444",
-    "text_primary": "#F9FAFB",
-    "text_secondary": "#9CA3AF",
-    "borders": "rgba(255, 255, 255, 0.1)"
+  "typography": {
+    "font_heading": "'Space Grotesk Variable', sans-serif",
+    "font_body": "'Plus Jakarta Sans Variable', sans-serif",
+    "font_mono": "'JetBrains Mono Variable', monospace",
+    "scale_px": {
+      "display": 56,
+      "h1": 42,
+      "h2": 32,
+      "h3": 24,
+      "body": 16,
+      "caption": 14
+    },
+    "letter_spacing": {
+      "headings": "-0.03em",
+      "ticket_labels": "0.15em",
+      "registration_code": "0.12em"
+    }
+  },
+  "entry_surfaces": {
+    "/": "split hero — festival pass showcase + interactive ticket preview generator left, live PDF/HTML preview switcher and actions right",
+    "/pass/:id": "cinematic mobile ticket pass — holographic branded notch header, high-contrast QR center with security seal, gate instructions footer"
   },
   "visual_enhancers": {
-    "marquees": "Kinetic typographic marquees (infinite scroll) for artist/event lineups. Use text-8xl outline text for background texture.",
-    "glassmorphism": "Crystal glass (bg-black/60 backdrop-blur-xl border-b border-white/10) for sticky headers and floating scanner controls.",
-    "textures": "Subtle noise/grain overlay on dark backgrounds to kill digital flatness.",
-    "grid_borders": "Expose the skeleton on the admin dashboard. 1px border-white/10 on grid items."
+    "ticket_ticket_stub_notch": "CSS radial cutouts with dashed separator line (border-dashed border-slate-600) between festival details and scannable QR stub",
+    "holographic_foil_strip": "Subtle angled chromatic linear-gradient ribbon (#FF007A, #7928CA, #06B6D4, #F59E0B) with shimmer animation",
+    "qr_quiet_zone_rule": "QR codes must have pure white (#FFFFFF) background with minimum 16px padding quiet zone for instant physical scanning across laser/camera scanners",
+    "official_branding_bar": "Side-by-side authentic co-branding header: SAGE University logo mark with gold typography + EUPHORIA Annual Youth Fest neon badge",
+    "noise_texture": "Subtle 2% SVG grain texture overlay to eliminate sterile digital flatness"
   },
-  "layouts": {
-    "marketing_landing": "Full-bleed hero with bg-black/50 overlay over the crowd image. Asymmetrical Bento grid for event highlights. Generous spacing (py-24, gap-12).",
-    "registration_flow": "Stepped sections. Do not overwhelm with forms. Floating persistent 'Complete Payment' CTA at the bottom.",
-    "admin_dashboard": "High-density Bento grid (grid-cols-1 md:grid-cols-4). Tight gaps (gap-4). Every pixel utilized.",
-    "scanner_app": "Mobile-first. Full-screen camera viewport. Glassmorphic bottom sheet for scan results (Valid/Duplicate/Invalid)."
+  "component_hierarchy_and_paths": {
+    "digital_react_pass": {
+      "path": "frontend/src/components/pass/DigitalPassCard.tsx",
+      "description": "Interactive mobile-first digital event pass component with flip view, wallet download CTA, live status pill, animated entrance and print mode"
+    },
+    "pdf_generator_engine": {
+      "path": "backend/lib/pdf_generator.py",
+      "description": "Full branded complete PDF ticket generator (ReportLab/Weasyprint/HTML-to-PDF template) with 300DPI layout, SAGE & EUPHORIA header, participant details grid, scannable QR with quiet zone, terms & gate rules, and barcoded tear-stub"
+    },
+    "html_email_template": {
+      "path": "backend/lib/email_template.py",
+      "description": "Table-based responsive transactional HTML email template compatible with Gmail, Apple Mail, Outlook, containing branded header, key event details, prominent 'View & Download Secure Pass' CTA button, gate rules and attached PDF notice"
+    },
+    "email_and_pass_previewer": {
+      "path": "frontend/src/pages/Home.tsx",
+      "description": "Comprehensive workbench allowing users to customize attendee, switch between Live Digital Pass, Email Client Preview (Gmail/Mobile mode), and PDF Download/Render Preview"
+    }
   },
-  "components": {
-    "buttons": "Pill-shaped or sharp rectangular. Primary CTA must use brand_primary (Yellow) with pure black text for contrast. Hover: -translate-y-1 with shadow-lg.",
-    "cards": "Flat solid background (#121212), 1px border-white/10, no ambient shadow in dark mode. Sharp or max rounded-lg.",
-    "forms": "Use pure Tailwind inputs. bg-black/50, border-white/10, text-white. Focus state: ring-2 ring-brand_primary outline-none.",
-    "qr_pass": "Neumorphic or glowing technical card. Prominent QR code on #FFFFFF background (for scannability), surrounded by dark festival branding."
+  "email_safe_specifications": {
+    "max_width": "600px",
+    "layout_mode": "Single-column fluid table layout with nested 100% width cells",
+    "cta_button": {
+      "min_height": "48px",
+      "min_width": "220px",
+      "background_color": "#FF007A",
+      "text_color": "#FFFFFF",
+      "border_radius": "8px",
+      "font_weight": "bold"
+    },
+    "attachment_notice": "Highlighted callout box notifying user that their official printable PDF pass with entry barcode is attached to the email"
   },
-  "motion": {
-    "interactions": "Hover states on all clickable elements (-translate-y-1 or brightness increase).",
-    "page_load": "Staggered fade-up for grid items. Do NOT use universal 'transition: all'. Explicitly transition transform and opacity."
-  },
-  "accessibility": {
-    "contrast": "Ensure text over brand_primary is #000000. Minimum 4.5:1 for normal text.",
-    "focus": "Clear focus indicators on all inputs and buttons.",
-    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., data-testid='checkout-button')."
-  },
-  "media": {
-    "image_urls": [
-      {
-        "category": "Hero Background",
-        "url": "https://images.unsplash.com/photo-1506157786151-b8491531f063?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwxfHx5b3V0aCUyMGZlc3RpdmFsJTIwY29uY2VydCUyMGNyb3dkJTIwbmVvbnxlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "High energy youth concert crowd. Use as full-bleed hero background with bg-black/50 overlay."
-      },
-      {
-        "category": "QR Pass Preview / Success",
-        "url": "https://images.unsplash.com/photo-1600147131759-880e94a6185f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxxciUyMGNvZGUlMjB0aWNrZXQlMjBwYXNzJTIwdHlwb2dyYXBoeXxlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Visual representation of the digital QR pass for the registration success page."
-      },
-      {
-        "category": "Scanner App Context",
-        "url": "https://images.unsplash.com/photo-1629128625414-374a9e16d56a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzN8MHwxfHNlYXJjaHwyfHxtb2JpbGUlMjBldmVudCUyMHNjYW5uZXIlMjBzY2FubmluZ3xlbnwwfHx8fDE3ODgxNTk1MDh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Contextual image for the admin/scanner feature highlight."
-      }
+  "pdf_pass_specifications": {
+    "dimensions": "Mobile ticket ratio (Portrait, approx 100mm x 210mm or scaled A4 half-sheet)",
+    "color_mode": "RGB / High-contrast print-ready",
+    "sections": [
+      "Top Header: SAGE UNIVERSITY & EUPHORIA ANNUAL YOUTH FESTIVAL Logos",
+      "Banner: Event Title, Category (Music/Dance/Technical/Drama/Sports), Pass Tier (VIP/Delegate/Participant)",
+      "Attendee Block: Full Name, Registration ID, Roll/College, Category, Date & Time, Hall/Stage Venue",
+      "Security QR Block: Sharp black-on-white 200x200px QR with 4-module quiet zone + Security Hash Code",
+      "Gate Instructions: Valid ID mandatory, non-transferable, entry gates close 15 min prior, barcode scan rule",
+      "Footer: Official seal, authorized signature line, helpline email & phone"
     ]
   },
-  "instructions_to_main_agent": [
-    "Since the stack is PHP CodeIgniter 4, you MUST construct the UI using standard HTML/PHP views (.php) and pure Tailwind CSS classes.",
-    "DO NOT attempt to use React components (.jsx/.tsx) or Shadcn-React. Implement interactivity using vanilla JavaScript (.js) or Alpine.js.",
-    "For the EaseBuzz payment flow, ensure the checkout form reflects raw HTML functionality with precise Tailwind styling to look premium.",
-    "For the QR Scanner, integrate a vanilla JS library like html5-qrcode within the CI4 view.",
-    "Replicate the Shadcn aesthetic (crisp borders, clean inputs, minimal shadows) using raw Tailwind utility classes."
+  "motion": {
+    "card_tilt": "Subtle 3D gyroscope/mouse hover tilt effect on digital card using motion/react",
+    "qr_scan_line": "Glowing laser scan-bar moving over QR on digital pass to indicate active live validity",
+    "tab_transitions": "Smooth layoutId animated sliding pill for switcher tabs"
+  },
+  "accessibility": {
+    "color_contrast": "All body copy exceeds 4.5:1 ratio (white #FFFFFF and slate-200 #CBD5E1 against #161B26 and #0F172A). Text over QR is dark slate #090D16 on #FFFFFF.",
+    "screen_reader": "Aria labels for pass status, registration code copy button, and download triggers",
+    "data_testid_convention": {
+      "pass_container": "digital-pass-container",
+      "participant_name": "pass-participant-name",
+      "registration_id": "pass-reg-id",
+      "event_category": "pass-event-category",
+      "qr_code_image": "pass-qr-code",
+      "download_pdf_btn": "pass-download-pdf-button",
+      "send_email_btn": "pass-send-email-button",
+      "email_preview_frame": "email-preview-container",
+      "pdf_preview_frame": "pdf-preview-container"
+    }
+  },
+  "image_urls": [
+    {
+      "category": "festival_banner_background",
+      "description": "Vibrant youth college music and cultural festival stage lighting and audience",
+      "url": "https://images.unsplash.com/photo-1506157786151-b8491531f063?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwyfHxjb2xsZWdlJTIwZmVzdGl2YWwlMjBjb25jZXJ0JTIwY3Jvd2QlMjB5b3V0aHxlbnwwfHx8fDE3ODQyNTM4MzN8MA&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "live_concert_lights",
+      "description": "High energy festival stage illumination",
+      "url": "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3"
+    },
+    {
+      "category": "crowd_cheering",
+      "description": "Excited college crowd cheering at annual youth fest",
+      "url": "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwzfHxjb2xsZWdlJTIwZmVzdGl2YWwlMjBjb25jZXJ0JTIwY3Jvd2QlMjB5b3V0aHxlbnwwfHx8fDE3ODQyNTM4MzN8MA&ixlib=rb-4.1.0&q=85"
+    }
   ],
-  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
-    "Don't make generic centered layouts. Use asymmetrical bento grids and heavy left-alignment for typography.",
-    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
-    "Create depth through layered design elements with z-index hierarchy.",
-    "Use glass-morphism effects with backdrop filters (12-24px blur) for sticky navs and floating elements.",
-    "You MUST NOT apply universal transition (e.g., transition: all). This breaks transforms. Always add transitions for specific properties.",
-    "You MUST NOT center align the app container. Do not add text-align: center globally.",
-    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
-    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use Phosphor Icons or Heroicons SVGs.",
-    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
-    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-    "CRITICAL: Do not use complete transparent background in header, overlays, or any surface that has content under it. Example: Dropdown with transparent background is strictly forbidden.",
-    "All interactive and key informational elements MUST include a `data-testid` attribute to facilitate robust automated testing."
+  "instructions_to_main_agent": [
+    "1. Replace plain text emails with a rich, modern, responsive table-based HTML email containing SAGE University and EUPHORIA branding, participant details, date, venue, status pill, prominent CTA to view the online digital pass, and gate instructions.",
+    "2. Replace QR-only attachments with a complete, colourful, printable mobile-ticket PDF that embeds the full pass design: official logos, participant name, event name, registration number, category badge, event schedule/venue, security barcode/QR with guaranteed white quiet zone, and gate rules.",
+    "3. Upgrade the frontend React digital pass into an ultra-attractive, vibrant youth-festival ticket (modeled with ticket notches, neon accents #FF007A / #7928CA / #06B6D4, holographic foil effect, live scan bar, and one-click PDF download & email trigger).",
+    "4. Provide an interactive live preview playground on the frontend allowing testing of the React Pass, HTML Email view, and PDF pass download with test sample attendee data.",
+    "5. Ensure strict QR contrast (solid black QR modules on clean white box with >=16px quiet zone) so physical scanner guns and phone cameras work with 100% reliability at festival gates.",
+    "6. Keep SAGE University and EUPHORIA branding authentic and prominent across all 3 channels (React app, HTML email, PDF attachment)."
   ]
 }

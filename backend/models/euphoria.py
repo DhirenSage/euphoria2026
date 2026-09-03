@@ -275,6 +275,9 @@ class PassResponse(BaseModel):
     category_name: str
     venue: str
     event_date: str
+    event_time: str
+    college: str
+    payment_status: str
     status: str
     qr_status: str
     qr_token: str

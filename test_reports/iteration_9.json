@@ -1,0 +1,72 @@
+{
+  "iteration": 9,
+  "mode": "generate",
+  "summary": "New briefing narrowed the acceptance matrix to 6 criteria about the redesigned digital event pass (colourful mobile-ticket layout, complete participant/event details, scanner-compatible QR, complete branded PDF download, branded resend email/PDF contract, and mobile responsiveness/security). Authored 2 browser checks and 2 new backend test files covering all 6 criteria; the resend/SMTP criterion reuses the pre-existing test_tscheck_pass_resend.py (already exercises a real SMTP send) plus a new generator-contract test, per spec_deviations which forbid triggering an additional real resend unless necessary and treat the generator contract + prior provider-accepted resend as sufficient delivery evidence.",
+  "passed": 6,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "checks": [
+    {
+      "criterion": "Secure digital pass has a colourful youth-festival mobile-ticket design",
+      "name": "pass-page-design-and-details",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Opened /pass/EUPHORIA-2026-000126?key=... at 390x844: digital-pass card visible with gradient hero, ACTIVE status badge, perforated QR stub, and gate instructions; no page errors thrown."
+    },
+    {
+      "criterion": "Pass contains complete participant and event information",
+      "name": "pass-page-design-and-details",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Same check asserted pass-participant-name='Ananya Sample Paid', pass-event-name contains 'Sample Paid Pass Event', registration id EUPHORIA-2026-000126, category 'Cultural', payment status 'MANUAL VERIFIED · ACTIVE', venue 'SAGE University Indore', college 'Fictional Sample College', and a visible security code."
+    },
+    {
+      "criterion": "QR remains high contrast and scanner-compatible",
+      "name": "pass-pdf-download-and-qr-scanner-decode",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Own fixture registration's black-on-white PNG QR (data:image/png base64 from GET /api/passes/{id}) was decoded via the existing scanner /scanner/login image-upload flow -> 'ENTRY ALLOWED' with the matching registration id."
+    },
+    {
+      "criterion": "Complete branded PDF downloads instead of QR-only attachment",
+      "name": "pass-pdf-download-and-qr-scanner-decode",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "GET /api/passes/{id}/pdf?key=<valid> -> 200 application/pdf, body starts with %PDF-, size > 50KB; invalid key on the same endpoint and on the JSON pass endpoint both -> 403 after clearing the admin session cookie."
+    },
+    {
+      "criterion": "Complete branded PDF downloads instead of QR-only attachment",
+      "name": "test_tscheck_pass_pdf_download.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/passes/{reg_id}/pdf with a real fixture pass_key -> 200, content-type application/pdf, %PDF- magic bytes, size > 50KB, Content-Disposition contains 'complete-event-pass.pdf'; unauthenticated invalid-key requests to both /pdf and the JSON pass endpoint -> 403."
+    },
+    {
+      "criterion": "Pass email resend uses branded HTML and complete PDF attachment",
+      "name": "test_tscheck_pass_email_pdf_contract.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "lib.email_template.pass_email_html produces table-based HTML containing participant name, event name, registration id, 'MANUAL VERIFIED' status, the secure pass CTA url and 'View secure digital pass' link; lib.pdf_generator.pass_pdf produces a %PDF- file > 50KB. Complemented by the pre-existing test_tscheck_pass_resend.py which already exercises the real configured SMTP send and pass_key rotation for this endpoint -- not re-run with a new send per spec_deviations."
+    },
+    {
+      "criterion": "Pass is responsive and secure",
+      "name": "pass-page-design-and-details",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 390x844 viewport: document.scrollWidth - window.innerWidth <= 2px (no horizontal overflow), and pass-download-pdf-button remained visible/reachable."
+    },
+    {
+      "criterion": "Pass is responsive and secure",
+      "name": "test_tscheck_pass_pdf_download.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Same file: invalid pass key on both /passes/{id} and /passes/{id}/pdf returns 403 (see PDF criterion evidence above)."
+    }
+  ],
+  "action_items": [
+    "Pre-existing (not in this iteration's matrix) tests/test_tscheck_public_api_edge_bridge.py::test_registration_catalogue_matches_seeded_facts now fails on a clean rerun too: GET /api/registration-catalogue currently returns only category_id='cultural' events (100 of them, likely tscheck- fixture accumulation from many prior iterations' make_event() calls which default to the 'cultural' category) and zero 'sports'/'literary-management'/'sci-pha-agro' events, where the test expects >=15 sports events from the original seed. This is outside the current briefing's acceptance matrix (digital pass redesign) so it was not fixed here, but the main agent should be aware the public catalogue's non-cultural categories appear to have lost their seeded events."
+  ],
+  "retest_needed": false
+}

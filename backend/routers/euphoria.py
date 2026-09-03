@@ -4,7 +4,6 @@ import secrets
 import base64
 import asyncio
 import smtplib
-import html
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -22,6 +21,8 @@ from pymongo import ReturnDocument
 from lib.catalogue import CATEGORIES, ensure_catalogue
 from lib.dates import today_iso
 from lib.db import db
+from lib.email_template import pass_email_html, pass_email_text
+from lib.pdf_generator import pass_pdf
 from models.euphoria import (
     AdminDashboardResponse,
     AdminEventWrite,
@@ -408,14 +409,14 @@ def qr_png(token: str) -> bytes:
     return buffer.getvalue()
 
 
-def send_pass_email_sync(recipient: str, participant: str, event_name: str, registration_id: str, pass_url: str, image: bytes):
+def send_pass_email_sync(recipient: str, data: dict, pass_url: str, pdf_bytes: bytes):
     message = EmailMessage()
-    message["Subject"] = "Euphoria 2026 – Your Event Pass"
+    message["Subject"] = f"Euphoria 2026 – {data['event_name']} Event Pass"
     message["From"] = f"{os.environ.get('SMTP_FROM_NAME', 'SAGE EUPHORIA')} <{os.environ.get('SMTP_FROM_EMAIL', '')}>"
     message["To"] = recipient
-    message.set_content(f"Hello {participant},\n\nYour pass for {event_name} is ready.\nRegistration ID: {registration_id}\nSecure pass: {pass_url}\n\nKeep the attached QR ready at the gate.")
-    message.add_alternative(f"<h2>Your EUPHORIA pass is ready</h2><p>Hello {html.escape(participant)},</p><p><strong>{html.escape(event_name)}</strong><br>Registration ID: {html.escape(registration_id)}</p><p><a href=\"{html.escape(pass_url, quote=True)}\">Open secure digital pass</a></p><p>Keep the attached QR ready at the gate.</p>", subtype="html")
-    message.add_attachment(image, maintype="image", subtype="png", filename=f"{registration_id}-qr.png")
+    message.set_content(pass_email_text(data, pass_url))
+    message.add_alternative(pass_email_html(data, pass_url), subtype="html")
+    message.add_attachment(pdf_bytes, maintype="application", subtype="pdf", filename=f"{data['registration_id']}-complete-event-pass.pdf")
     with smtplib.SMTP(os.environ.get("SMTP_HOST", ""), int(os.environ.get("SMTP_PORT", "587")), timeout=20) as smtp:
         smtp.starttls()
         smtp.login(os.environ.get("SMTP_USER", ""), os.environ.get("SMTP_PASSWORD", ""))
@@ -433,9 +434,20 @@ async def resend_pass(registration_id: str, request: Request):
     pass_key = secrets.token_urlsafe(32)
     await db.euphoria_registrations.update_one({"_id": registration["_id"]}, {"$set": {"pass_key_hash": hashlib.sha256(pass_key.encode()).hexdigest(), "pass_sent_at": datetime.now(timezone.utc)}})
     token = cipher().decrypt(registration["qr_token_ciphertext"].encode()).decode()
+    event_row = await db.euphoria_events.find_one({"id": registration["event_id"]}, {"_id": 0})
+    if not event_row:
+        raise HTTPException(status_code=404, detail="Event not found.")
     pass_url = f"{os.environ.get('APP_URL', '').rstrip('/')}/pass/{registration_id}?key={pass_key}"
+    data = {
+        "registration_id": registration_id, "participant_name": registration["participant_name"],
+        "event_name": registration["event_name"], "category_name": registration["category_name"],
+        "venue": event_row["venue"], "event_date": event_row["event_date"], "event_time": event_row["event_time"],
+        "college": registration.get("college", "Registered participant"),
+        "payment_status": registration.get("payment", {}).get("status", "verified"),
+    }
     try:
-        await asyncio.to_thread(send_pass_email_sync, registration["email"], registration["participant_name"], registration["event_name"], registration_id, pass_url, qr_png(token))
+        complete_pdf = await asyncio.to_thread(pass_pdf, data, qr_png(token))
+        await asyncio.to_thread(send_pass_email_sync, registration["email"], data, pass_url, complete_pdf)
     except Exception as exc:
         await audit(user, "pass.email_failed", "registrations", registration_id, {"error_type": type(exc).__name__})
         raise HTTPException(status_code=502, detail="The mail provider could not send this pass.") from exc
@@ -509,7 +521,7 @@ async def health():
 
 @router.get("/events", response_model=EuphoriaEventsResponse)
 async def events():
-    rows = await db.euphoria_events.find({"status": "registration_open"}, {"_id": 0}).sort([("category_id", 1), ("name", 1)]).to_list(100)
+    rows = await db.euphoria_events.find({"status": "registration_open"}, {"_id": 0}).sort([("category_id", 1), ("name", 1)]).to_list(5000)
     return {"data": rows, "meta": {"programme": "Euphoria 2026"}}
 
 
@@ -523,7 +535,7 @@ async def event(slug: str):
 
 @router.get("/registration-catalogue", response_model=RegistrationCatalogueResponse)
 async def registration_catalogue():
-    rows = await db.euphoria_events.find({"status": "registration_open"}, {"_id": 0}).sort([("category_id", 1), ("name", 1)]).to_list(100)
+    rows = await db.euphoria_events.find({"status": "registration_open"}, {"_id": 0}).sort([("category_id", 1), ("name", 1)]).to_list(5000)
     return {"categories": CATEGORIES, "events": rows}
 
 
@@ -690,8 +702,7 @@ async def easebuzz_callback(request: Request):
     return RedirectResponse(f"{os.environ.get('APP_URL','').rstrip('/')}/registration/success/{registration['registration_id']}", status_code=303)
 
 
-@router.get("/passes/{registration_id}", response_model=PassResponse)
-async def get_pass(registration_id: str, request: Request, key: str = ""):
+async def authorized_pass(registration_id: str, request: Request, key: str) -> tuple[dict, dict, str, bytes]:
     registration = await db.euphoria_registrations.find_one({"registration_id": registration_id})
     if not registration:
         raise HTTPException(status_code=404, detail="Registration not found.")
@@ -707,10 +718,14 @@ async def get_pass(registration_id: str, request: Request, key: str = ""):
     if not event_row:
         raise HTTPException(status_code=404, detail="Event not found.")
     token = cipher().decrypt(registration["qr_token_ciphertext"].encode()).decode()
-    image = qrcode.make(token)
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    qr_data_url = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+    image_bytes = qr_png(token)
+    return registration, event_row, token, image_bytes
+
+
+@router.get("/passes/{registration_id}", response_model=PassResponse)
+async def get_pass(registration_id: str, request: Request, key: str = ""):
+    registration, event_row, token, image_bytes = await authorized_pass(registration_id, request, key)
+    qr_data_url = "data:image/png;base64," + base64.b64encode(image_bytes).decode()
     return {
         "registration_id": registration_id,
         "participant_name": registration["participant_name"],
@@ -718,11 +733,32 @@ async def get_pass(registration_id: str, request: Request, key: str = ""):
         "category_name": registration["category_name"],
         "venue": event_row["venue"],
         "event_date": event_row["event_date"],
+        "event_time": event_row["event_time"],
+        "college": registration.get("college", "Registered participant"),
+        "payment_status": registration.get("payment", {}).get("status", "verified"),
         "status": registration["status"],
         "qr_status": registration["qr_status"],
         "qr_token": token,
         "qr_data_url": qr_data_url,
     }
+
+
+@router.get("/passes/{registration_id}/pdf")
+async def download_pass_pdf(registration_id: str, request: Request, key: str = ""):
+    registration, event_row, token, image_bytes = await authorized_pass(registration_id, request, key)
+    data = {
+        "registration_id": registration_id, "participant_name": registration["participant_name"],
+        "event_name": registration["event_name"], "category_name": registration["category_name"],
+        "venue": event_row["venue"], "event_date": event_row["event_date"], "event_time": event_row["event_time"],
+        "college": registration.get("college", "Registered participant"),
+        "payment_status": registration.get("payment", {}).get("status", "verified"),
+    }
+    pdf_bytes = await asyncio.to_thread(pass_pdf, data, image_bytes)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{registration_id}-complete-event-pass.pdf"'},
+    )
 
 
 @router.get("/scanner/context", response_model=ScannerContextResponse)

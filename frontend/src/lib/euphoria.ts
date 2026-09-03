@@ -227,6 +227,9 @@ export interface PassResponse {
   category_name: string;
   venue: string;
   event_date: string;
+  event_time: string;
+  college: string;
+  payment_status: string;
   status: string;
   qr_status: string;
   qr_token: string;
