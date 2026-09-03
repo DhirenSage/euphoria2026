@@ -205,6 +205,12 @@ After Admin login, open **Gallery & video**. Admin/Content Manager can upload JP
 
 Open **Bulk passes**, download the template, and upload a `.csv` or `.xlsx` list with `participant_name`, `mobile`, `institute_name`, `email`, and `event_name` (or safer `event_slug`). Valid rows are confirmed as complimentary, receive individual QR passes, and enter the email queue. The one-minute cron in section 13 is required for delivery.
 
+### Admin navigation and permanent deletion
+
+Admin modules are separate routes, so opening Events, Participants, Attendance, Payments, Entry Tracking, Media, Bulk Passes, or Scanner Users loads only that module's data. The Events page is searchable, filterable, paginated, and supports checkbox bulk cleanup.
+
+`Permanent Delete` is SUPER ADMIN only. A single deletion requires typing the exact event name; bulk deletion requires `DELETE SELECTED`. It irreversibly removes the event's registrations, payment records, QR/pass data, attendance, scan attempts, queued email records, schedules, custom fields, event media links, and stored pass/media files. Export/backup MySQL before using it on production data.
+
 ## 10. Replace demo accounts before launch
 
 The import contains first-login development accounts documented in the project README. Generate new password hashes on a trusted PHP 8.2 computer:
@@ -307,7 +313,7 @@ Do not announce the site until this real flow passes:
 6. Registration ID, QR, digital pass, and one-page PDF are generated.
 7. Cron changes the pass email job from `pending` to `sent`; the complete PDF arrives.
 8. Any active Scanner logs in over HTTPS and immediately sees camera/manual token input—there is no event, day, assignment, or gate selection.
-9. The QR automatically resolves its event and today's configured event day; first scan is allowed and same QR/day is rejected as duplicate.
+9. Before the event date, the scanner shows participant/event/date/time/venue with “UPCOMING EVENT — ENTRY NOT OPEN” and saves no attendance. On the configured date, the QR automatically resolves its event/day, first scan is allowed, and same QR/day is rejected as duplicate.
 10. The same QR on a second configured event day is allowed.
 11. Before-date, expired, unpaid, invalid, and revoked passes are denied; a multi-day pass is allowed once on each configured date.
 12. Dashboard totals and CSV attendance export contain the entry.

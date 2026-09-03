@@ -7,6 +7,7 @@ use App\Models\EventModel;
 use App\Models\RegistrationModel;
 use App\Services\AuditService;
 use App\Services\EmailQueueService;
+use App\Services\EventDeletionService;
 use RuntimeException;
 
 class AdminController extends BaseController
@@ -71,8 +72,8 @@ class AdminController extends BaseController
 
     public function events()
     {
-        $events=(new EventModel())->select('events.*, categories.name AS category_name')->join('categories','categories.id=events.category_id')->orderBy('events.created_at','DESC')->findAll();
-        return $this->render('admin/events', ['events'=>$events,'title'=>'Events']);
+        $query=trim((string)$this->request->getGet('q'));$status=(string)$this->request->getGet('status');$categoryId=(int)$this->request->getGet('category_id');$model=(new EventModel())->select('events.*, categories.name AS category_name')->join('categories','categories.id=events.category_id');if($query!=='')$model->groupStart()->like('events.name',$query)->orLike('events.slug',$query)->groupEnd();if($status!=='')$model->where('events.status',$status);if($categoryId)$model->where('events.category_id',$categoryId);$events=$model->orderBy('events.created_at','DESC')->paginate(25,'events');
+        return $this->render('admin/events',['events'=>$events,'pager'=>$model->pager,'categories'=>$this->activeCategories(),'filters'=>['q'=>$query,'status'=>$status,'category_id'=>$categoryId],'title'=>'Events','active'=>'events']);
     }
 
     public function newEvent()
@@ -105,12 +106,12 @@ class AdminController extends BaseController
 
     public function deleteEvent(int $id)
     {
-        $this->requireAny(['SUPER_ADMIN','PROGRAMME_ADMIN']);
-        $registrations=db_connect()->table('registrations')->where('event_id',$id)->countAllResults();
-        if($registrations>0){(new EventModel())->update($id,['status'=>'archived']);$message='Event archived because registrations already exist.';}
-        else{(new EventModel())->delete($id);$message='Event deleted.';}
-        (new AuditService())->record('event.deleted_or_archived','events',(string)$id,['registrations'=>$registrations]);
-        return redirect()->to('/admin/events')->with('message',$message);
+        $this->requireAny(['SUPER_ADMIN']);$event=(new EventModel())->find($id);if(!$event)throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();if(!hash_equals($event['name'],trim((string)$this->request->getPost('confirm_name'))))return redirect()->back()->with('error','Permanent deletion cancelled: type the exact event name.');try{$result=(new EventDeletionService(db_connect()))->deleteMany([$id]);(new AuditService())->record('event.permanently_deleted','events',(string)$id,['event_name'=>$event['name'],'registrations'=>$result['registrations']]);return redirect()->to(base_url('admin/events'))->with('message','Event and '.$result['registrations'].' related registrations permanently deleted.');}catch(RuntimeException $e){return redirect()->back()->with('error',$e->getMessage());}
+    }
+
+    public function bulkDeleteEvents()
+    {
+        $this->requireAny(['SUPER_ADMIN']);if((string)$this->request->getPost('confirm_phrase')!=='DELETE SELECTED')return redirect()->back()->with('error','Bulk deletion cancelled: type DELETE SELECTED exactly.');try{$result=(new EventDeletionService(db_connect()))->deleteMany((array)$this->request->getPost('event_ids'));(new AuditService())->record('events.bulk_permanently_deleted','events',null,$result);return redirect()->to(base_url('admin/events'))->with('message',$result['events'].' events and '.$result['registrations'].' related registrations permanently deleted.');}catch(RuntimeException $e){return redirect()->back()->with('error',$e->getMessage());}
     }
 
     public function registrations() { return $this->render('admin/registrations', ['registrations'=>(new RegistrationModel())->withEvent(),'title'=>'Registrations']); }
@@ -143,8 +144,7 @@ class AdminController extends BaseController
         $db=db_connect();$date=(string)$this->request->getGet('date');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))$date=date('Y-m-d');$eventId=(int)$this->request->getGet('event_id');$status=(string)$this->request->getGet('status');$events=$db->table('events')->select('id,name')->orderBy('name','ASC')->get()->getResultArray();
         $builder=$db->table('registrations r')->select('r.registration_id,r.participant_name,r.email,r.mobile,r.college,e.id event_id,e.name event_name,d.id event_day_id,d.label event_day_label,d.event_date,a.entry_time,u.name scanner_name')->join('events e','e.id=r.event_id')->join('event_days d','d.event_id=e.id AND d.event_date='.$db->escape($date).' AND d.is_active=1')->join('attendance a','a.registration_id=r.id AND a.event_day_id=d.id','left')->join('users u','u.id=a.scanner_user_id','left')->where('r.status','confirmed');if($eventId)$builder->where('e.id',$eventId);if($status==='entered')$builder->where('a.id IS NOT NULL',null,false);if($status==='not_entered')$builder->where('a.id IS NULL',null,false);$roster=$builder->orderBy('e.name','ASC')->orderBy('r.participant_name','ASC')->get()->getResultArray();
         $summaryBuilder=$db->table('registrations r')->select('COUNT(*) total, SUM(CASE WHEN a.id IS NULL THEN 0 ELSE 1 END) entered',false)->join('event_days d','d.event_id=r.event_id AND d.event_date='.$db->escape($date).' AND d.is_active=1')->join('attendance a','a.registration_id=r.id AND a.event_day_id=d.id','left')->where('r.status','confirmed');if($eventId)$summaryBuilder->where('r.event_id',$eventId);$summary=$summaryBuilder->get()->getRowArray()?:['total'=>0,'entered'=>0];
-        $entries=$db->table('scan_attempts a')->select('a.*,r.participant_name,r.registration_id,e.name AS event_name,u.name AS scanner_name,d.label AS day_label')->join('registrations r','r.id=a.registration_id','left')->join('events e','e.id=a.event_id','left')->join('users u','u.id=a.scanner_user_id','left')->join('event_days d','d.id=a.event_day_id','left')->where('DATE(a.attempted_at)',$date)->orderBy('a.attempted_at','DESC')->get(100)->getResultArray();
-        return $this->render('admin/attendance',['entries'=>$entries,'roster'=>$roster,'events'=>$events,'selectedDate'=>$date,'selectedEvent'=>$eventId,'selectedStatus'=>$status?:'all','summary'=>['total'=>(int)$summary['total'],'entered'=>(int)$summary['entered'],'not_entered'=>(int)$summary['total']-(int)$summary['entered']],'title'=>'Date-wise attendance','active'=>'attendance']);
+        return $this->render('admin/attendance',['roster'=>$roster,'events'=>$events,'selectedDate'=>$date,'selectedEvent'=>$eventId,'selectedStatus'=>$status?:'all','summary'=>['total'=>(int)$summary['total'],'entered'=>(int)$summary['entered'],'not_entered'=>(int)$summary['total']-(int)$summary['entered']],'title'=>'Date-wise attendance','active'=>'attendance']);
     }
 
     public function scanners()
@@ -182,6 +182,16 @@ class AdminController extends BaseController
         $db=db_connect();$eventId=(int)$this->request->getGet('event_id');$dayId=(int)$this->request->getGet('day_id');
         $builder=$db->table('attendance a')->select('a.*,r.participant_name,r.registration_id,r.registration_type,e.name AS event_name,c.name AS category_name,d.label AS day_label,d.event_date,g.name AS gate_name,u.name AS scanner_name')->join('registrations r','r.id=a.registration_id')->join('events e','e.id=a.event_id')->join('categories c','c.id=e.category_id')->join('event_days d','d.id=a.event_day_id')->join('gates g','g.id=a.gate_id','left')->join('users u','u.id=a.scanner_user_id','left');if($eventId)$builder->where('a.event_id',$eventId);if($dayId)$builder->where('a.event_day_id',$dayId);$rows=$builder->orderBy('a.entry_time','DESC')->get(500)->getResultArray();
         return $this->render('admin/reports',['rows'=>$rows,'events'=>(new EventModel())->orderBy('name')->findAll(),'days'=>$db->table('event_days')->orderBy('event_date')->get()->getResultArray(),'filters'=>['event_id'=>$eventId,'day_id'=>$dayId],'title'=>'Reports']);
+    }
+
+    public function payments()
+    {
+        $this->requireAny(['SUPER_ADMIN','PROGRAMME_ADMIN','FINANCE']);$db=db_connect();$status=(string)$this->request->getGet('status');$eventId=(int)$this->request->getGet('event_id');$builder=$db->table('payments p')->select('p.*,r.registration_id,r.participant_name,r.email,e.name event_name')->join('registrations r','r.id=p.registration_id')->join('events e','e.id=r.event_id');if($status!=='')$builder->where('p.status',$status);if($eventId)$builder->where('e.id',$eventId);$rows=$builder->orderBy('p.created_at','DESC')->limit(500)->get()->getResultArray();return $this->render('admin/payments',['payments'=>$rows,'events'=>(new EventModel())->orderBy('name')->findAll(),'filters'=>['status'=>$status,'event_id'=>$eventId],'title'=>'Payments','active'=>'payments']);
+    }
+
+    public function entryTracking()
+    {
+        $this->requireAny(['SUPER_ADMIN','PROGRAMME_ADMIN','EVENT_ADMIN','REPORT_VIEWER']);$db=db_connect();$date=(string)$this->request->getGet('date');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))$date=date('Y-m-d');$status=(string)$this->request->getGet('status');$eventId=(int)$this->request->getGet('event_id');$builder=$db->table('scan_attempts a')->select('a.*,r.participant_name,r.registration_id,e.name event_name,d.label day_label,d.event_date,u.name scanner_name')->join('registrations r','r.id=a.registration_id','left')->join('events e','e.id=a.event_id','left')->join('event_days d','d.id=a.event_day_id','left')->join('users u','u.id=a.scanner_user_id','left')->where('DATE(a.attempted_at)',$date);if($status!=='')$builder->where('a.status',$status);if($eventId)$builder->where('a.event_id',$eventId);$rows=$builder->orderBy('a.attempted_at','DESC')->limit(500)->get()->getResultArray();return $this->render('admin/entry_tracking',['rows'=>$rows,'events'=>(new EventModel())->orderBy('name')->findAll(),'filters'=>['date'=>$date,'status'=>$status,'event_id'=>$eventId],'title'=>'Entry tracking','active'=>'entry-tracking']);
     }
 
     public function exportAttendance()

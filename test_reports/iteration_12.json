@@ -1,0 +1,114 @@
+{
+  "iteration": 12,
+  "mode": "generate",
+  "summary": "8/8 acceptance-matrix criteria for the CodeIgniter permanent-event-deletion release covered: 2 pytest files (12 tests, all passing, hitting the live spark server at 127.0.0.1:8091 with direct euphoria_release MySQL verification) plus 6 browser checks (all passing) against the CodeIgniter admin/scanner UI. One environment gap found and worked around: this CI runtime's deployed .env (at /tmp/euphoria-ci-runtime, served by the running spark process) has no encryption.key, so the app's own registration / bulk-pass-import flows throw 'Encrypter needs a starter key' and cannot create real scannable passes -- fixtures for cascade-deletion and scan-behaviour tests were seeded directly in MySQL instead, with the actual criterion behaviour (deletion, scan) still exercised through real HTTP calls to the running app.",
+  "criteria_count": 7,
+  "passed": 13,
+  "failed": 0,
+  "bugs": [],
+  "action_items": [
+    {
+      "type": "environment_config_gap",
+      "severity": "medium",
+      "description": "The CodeIgniter runtime copy actually serving http://127.0.0.1:8091 (cwd /tmp/euphoria-ci-runtime, CI_ENVIRONMENT=production) has no `encryption.key` set in its .env. Any flow that calls service('encrypter') -- public registration, admin bulk-pass CSV import, digital pass rendering for newly created registrations -- fails with 'ErrorException: Encrypter needs a starter key.' /app/codeigniter's own .env (the source template) does define encryption.key, so this is a deployment/config gap in the running test copy, not in the source under /app/codeigniter. Recommend setting encryption.key in the runtime .env (e.g. via `php spark key:generate`) so registration-creation-dependent flows can be exercised end-to-end in this environment. Worked around for this iteration by seeding registration/payment/qr_token fixture rows directly in MySQL and exercising only the deletion/scan behaviour under test through real HTTP calls."
+    },
+    {
+      "type": "note",
+      "description": "Criterion 'non-SUPER_ADMIN cannot invoke permanent deletion' was verified with the seeded SCANNER account (only non-admin credential provided in seed_facts): POST to /admin/events/{id}/delete as the scanner session is blocked by the admin auth filter before reaching AdminController, and the seeded 'Upcoming QR Proof' event was confirmed to remain in the database afterward. No PROGRAMME_ADMIN/EVENT_ADMIN-but-not-SUPER_ADMIN credential was available to test the more specific in-module role check, since none was provided in seed_facts or test_credentials.md."
+    }
+  ],
+  "retest_needed": false,
+  "checks": [
+    {
+      "criterion": "Single event permanent deletion removes related data",
+      "name": "test_permanent_delete_cascades_related_rows_and_leaves_audit (test_tscheck_permanent_event_deletion.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Seeded event + registration + payment + qr_token + attendance + scan_attempts + email_jobs/logs + registration_forms/fields/values/members + event_schedules/speakers + media_items + event_galleries for a fresh tscheck-permadelete-<ts> event. POST /admin/events/{id}/delete with confirm_name=<exact name> as SUPER_ADMIN -> 200. Re-queried all 16 related tables: every count == 0, plus events row itself == 0. audit_logs row with action='event.permanently_deleted' and record_id=<event_id> count >= 1 confirmed retained."
+    },
+    {
+      "criterion": "Single event permanent deletion removes related data (UI)",
+      "name": "admin-event-permanent-delete-removes-event",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged in as SUPER_ADMIN, created tscheck-permadelete-<ts> via /admin/events/new, clicked its 'Permanent delete' button, accepted the browser prompt() with the exact event name. Re-searched /admin/events for the name afterward: events-empty testid visible (row fully gone, not cancelled/archived). Screenshots: before-delete, after-delete-gone."
+    },
+    {
+      "criterion": "Bulk permanent deletion cleans selected events",
+      "name": "test_bulk_permanent_delete_removes_only_selected_events (test_tscheck_permanent_event_deletion.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Created 3 fixture events A/B/C. POST /admin/events/bulk-delete with confirm_phrase=DELETE SELECTED and event_ids[]=[A,B] -> 200. Re-queried events where id in (A,B,C): remaining set == {C} only; unselected C untouched by the bulk action (cleaned up separately afterward via its own correct single-delete call)."
+    },
+    {
+      "criterion": "Bulk permanent deletion cleans selected events (UI)",
+      "name": "admin-bulk-permanent-delete-selected-only",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created 3 fixture events (A/B/keep), checked A and B's row checkboxes, clicked bulk delete, accepted prompt() with 'DELETE SELECTED'. Re-search confirmed rows A and B count==0 while the unselected 'keep' row count==1 (then cleaned up via its own single permanent delete). Screenshots: two-selected, after-bulk-delete."
+    },
+    {
+      "criterion": "Permanent deletion is protected (wrong confirmation text / bulk phrase)",
+      "name": "test_permanent_delete_rejected_with_wrong_confirmation_name + test_bulk_permanent_delete_rejected_with_wrong_confirmation_phrase (test_tscheck_permanent_event_deletion.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /admin/events/{id}/delete with confirm_name='not the real name' -> 200 but event row count stays 1. POST /admin/events/bulk-delete with confirm_phrase='delete selected' (wrong case/text) and a valid event_ids[] -> 200 but event row count stays 1. Both fixtures then cleaned up with the correct confirmation."
+    },
+    {
+      "criterion": "Permanent deletion is protected (UI wrong confirmation)",
+      "name": "admin-permanent-delete-rejected-with-wrong-confirmation",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created a fixture event; accepted the delete prompt() with 'not the right name' -> row still present (count==1) after re-search. Selected the same row and clicked bulk delete, accepted prompt() with lowercase 'delete selected' -> row still present (count==1). Cleaned up afterward with the correct name. Screenshots: still-present-after-wrong-name, still-present-after-wrong-bulk-phrase."
+    },
+    {
+      "criterion": "Permanent deletion is protected (non-SUPER_ADMIN rejected)",
+      "name": "test_permanent_delete_forbidden_for_non_super_admin_scanner_account (test_tscheck_permanent_event_deletion.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Logged in as scanner@euphoria.test (SCANNER role), POST /admin/events/{seeded 'Upcoming QR Proof' id}/delete with the correct confirm_name -> response status 404 (admin auth filter rejects before reaching AdminController::deleteEvent). Re-queried events table for that id: count still 1 -- seeded fixture untouched."
+    },
+    {
+      "criterion": "Permanent deletion is protected (up to 100 records allowed / >100 rejected)",
+      "name": "test_bulk_permanent_delete_allows_up_to_100_records + test_bulk_permanent_delete_rejects_more_than_100_records (test_tscheck_permanent_event_deletion.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Seeded 100 fixture events directly, POST /admin/events/bulk-delete with all 100 ids + correct phrase -> 200, all 100 rows gone (remaining==0). Separately seeded 101 fixture events, same bulk-delete call -> 200 but all 101 rows still present afterward (remaining==101), confirming the >100 cap is enforced as a rejection rather than a partial/best-effort delete; oversized fixture then cleaned up directly."
+    },
+    {
+      "criterion": "Admin modules are route-separated",
+      "name": "admin-modules-route-separated",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Visited /admin/events, /admin/media, /admin/registrations, /admin/attendance, /admin/bulk-passes, /admin/scanners, /admin/payments, /admin/entry-tracking as SUPER_ADMIN. Each page showed its own unique testid (events-page-title, media-create-form, registrations-page-title, attendance-filter-form, bulk-pass-form, scanner-user-create-form, payments-page-title, entry-tracking-title) and none of the other modules' marker testids were present (count 0) on any page."
+    },
+    {
+      "criterion": "Large event list is manageable",
+      "name": "admin-events-list-search-filter-pagination-controls",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/admin/events shows event-search, event-status-filter, event-category-filter, event-select-all and event-bulk-delete testids. With 50+ seeded events, page-1 row count via tbody tr[data-testid^=admin-event-row-] <= 25. Search for a non-existent name shows events-empty. Selecting status=cancelled reflects status=cancelled in the URL query string. event-select-all check flips the first row checkbox to checked."
+    },
+    {
+      "criterion": "Pre-event QR scan is informational only",
+      "name": "scanner-pre-event-scan-shows-upcoming-informational",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged in as scanner@euphoria.test, submitted seeded token EUPHORIA-UPCOMING-TEST-TOKEN-1234567890. /scanner/scan JSON response: status='upcoming', ok=false. Rendered #scanner-result contains 'UPCOMING EVENT', 'ENTRY NOT OPEN', event name 'Upcoming QR Proof', day label 'Future Day', date '2030-10-15' and venue 'Future Arena'."
+    },
+    {
+      "criterion": "Pre-event QR scan is informational only (no attendance row)",
+      "name": "test_pre_event_scan_of_seeded_upcoming_fixture_creates_no_attendance_row (test_tscheck_scanner_event_day_and_expiry.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Re-verified via direct HTTP scan of the same seeded UPCOMING-QR-001 registration: response status='upcoming', ok=false; SELECT count(*) from attendance joined to that registration_id == 0."
+    },
+    {
+      "criterion": "Event-day and expired behavior remain correct",
+      "name": "test_first_scan_allowed_second_scan_duplicate_on_configured_day + test_scan_after_final_configured_date_is_expired_and_denied (test_tscheck_scanner_event_day_and_expiry.py)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Fixture event with event_day=today: first /scanner/scan -> ok=true,status=allowed, attendance count==1; second scan of same token -> ok=false,status=duplicate, attendance count stays 1. Separate fixture event with only a 2020-01-01 day: /scanner/scan -> ok=false,status=denied,message contains 'expired'; attendance count==0; registrations.qr_status updated to 'expired'."
+    }
+  ]
+}

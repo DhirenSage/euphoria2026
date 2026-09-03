@@ -66,3 +66,16 @@ The primary no-SSH deployment target is a hardened single-folder package extract
 - Homepage and `/gallery` use active ordered media records for hero, highlights, featured performer/video, line-up, and gallery strip while schedule and category highlights remain event-backed.
 - Admin Media Manager supports JPG/PNG/WEBP upload and YouTube/Vimeo/direct MP4/WEBM URLs, caption, optional event relationship, section placement, display order, active state, edit, and delete.
 - Uploaded files are stored outside the public directory (`writable/uploads/media` in CodeIgniter; protected backend uploads in preview) and served through controlled media endpoints.
+
+## CodeIgniter permanent event deletion
+- CodeIgniter Super Admin can permanently delete one event only after typing its exact event name, or select up to 100 events and type `DELETE SELECTED` for bulk deletion.
+- Permanent deletion runs in a database transaction and removes related registrations, payment transactions, payments, QR tokens, attendance, scan attempts, email queue/log records, custom values/members, event days/forms/fields/schedules/speakers/galleries, scanner assignments, linked media, and stored pass/media files. A deletion audit record is retained after commit.
+- Event deletion no longer converts events to cancelled/archived. This operation is intentionally irreversible and restricted to SUPER_ADMIN.
+
+## CodeIgniter route-based Admin
+- Admin modules use separate routes and render only relevant server data: Overview, Events, Gallery & Video, Participants, Attendance, Bulk Passes, Scanner Users, Payments, Entry Tracking, Reports, and Settings.
+- Events are searchable/filterable and paginated at 25 per page. Payment and entry tracking pages have their own filters; Attendance contains only the expected/entered participant roster.
+
+## Upcoming pass scan
+- In CodeIgniter, date enforcement is always strict: a valid confirmed QR scanned before its next configured event date returns `upcoming`, participant/event/date/time/venue details, and “UPCOMING EVENT — ENTRY NOT OPEN”. It writes no attendance row.
+- On a configured date, the same QR records attendance once. After the final configured date it expires; same-day repeats remain duplicate.

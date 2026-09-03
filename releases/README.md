@@ -19,4 +19,6 @@ The full step-by-step handbook is `/app/codeigniter/CPANEL_SINGLE_FOLDER_DEPLOYM
 
 This release also includes automatic event/day QR routing with no gate selector, simple scanner-user creation, date-wise complete attendance rosters, CSV/XLSX complimentary pass generation, and Admin-managed homepage/gallery images and video URLs.
 
+Latest Admin update: Events now support exact-name single permanent deletion and confirmation-protected checkbox bulk deletion with full related-data cleanup. Admin modules use separate routes, and a pre-event QR shows participant/event/date/time/venue as UPCOMING without saving attendance.
+
 Live Easebuzz callback, SMTP delivery, cron, HTTPS camera permission, and Apache rewrite behavior must still be validated on the actual cPanel host.

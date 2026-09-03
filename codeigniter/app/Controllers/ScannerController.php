@@ -20,7 +20,7 @@ class ScannerController extends BaseController
     }
     public function index()
     {
-        return $this->render('scanner/index', ['title'=>'Automatic entry scanner', 'serverDate'=>date('Y-m-d'), 'demoMode'=>ENVIRONMENT !== 'production' && filter_var(env('SCANNER_ALLOW_OFFDATE', true), FILTER_VALIDATE_BOOL)]);
+        return $this->render('scanner/index', ['title'=>'Automatic entry scanner', 'serverDate'=>date('Y-m-d')]);
     }
     public function scan()
     {

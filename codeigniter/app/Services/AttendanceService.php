@@ -14,7 +14,7 @@ final class AttendanceService
     {
         $token = trim($rawToken);
         $registration = $this->db->table('registrations r')
-            ->select('r.*, e.name AS event_name, e.id AS linked_event_id, p.status AS payment_status, q.status AS token_status')
+            ->select('r.*, e.name AS event_name, e.id AS linked_event_id, e.event_start, e.event_end, e.venue, p.status AS payment_status, q.status AS token_status')
             ->join('events e', 'e.id=r.event_id')
             ->join('payments p', 'p.registration_id=r.id', 'left')
             ->join('qr_tokens q', 'q.registration_id=r.id')
@@ -28,12 +28,6 @@ final class AttendanceService
         $today = date('Y-m-d');
         $day = null;
         foreach ($days as $candidate) if ($candidate['event_date'] === $today) { $day = $candidate; break; }
-        $allowOffDate = ENVIRONMENT !== 'production' && filter_var(env('SCANNER_ALLOW_OFFDATE', true), FILTER_VALIDATE_BOOL);
-        if (!$day && $allowOffDate && $days) {
-            $used = array_column($this->db->table('attendance')->select('event_day_id')->where(['registration_id'=>$registration['id'], 'event_id'=>$eventId])->get()->getResultArray(), 'event_day_id');
-            foreach ($days as $candidate) if (!in_array($candidate['id'], $used)) { $day = $candidate; break; }
-            $day ??= $days[0];
-        }
         if (!$day) {
             if ($days && $today > end($days)['event_date']) {
                 $this->db->table('registrations')->where('id', $registration['id'])->update(['qr_status'=>'expired', 'updated_at'=>date('Y-m-d H:i:s')]);
@@ -41,8 +35,9 @@ final class AttendanceService
                 $registration['qr_status'] = 'expired';
                 return $this->result(false, 'denied', 'This pass has expired because all configured event days are over.', $registration, null, $scannerId, $token);
             }
-            $message = $days && $today < $days[0]['event_date'] ? 'This pass is not active yet.' : 'This event has no entry scheduled for today.';
-            return $this->result(false, 'denied', $message, $registration, null, $scannerId, $token);
+            $nextDay = null; foreach($days as $candidate) if($candidate['event_date'] > $today){$nextDay=$candidate;break;}
+            $message = $nextDay ? 'Upcoming event — entry is not open. This pass is valid on '.$nextDay['event_date'].' for '.$registration['event_name'].'.' : 'This event has no entry scheduled for today.';
+            return $this->result(false, $nextDay?'upcoming':'denied', $message, $registration, $nextDay, $scannerId, $token);
         }
         $dayId = (int) $day['id'];
         $existing = $this->db->table('attendance')->where(['registration_id'=>$registration['id'], 'event_day_id'=>$dayId])->get()->getRowArray();
@@ -64,9 +59,10 @@ final class AttendanceService
     {
         $eventId = $registration ? (int)$registration['event_id'] : null;
         $dayId = $day ? (int)$day['id'] : null;
-        $this->db->table('scan_attempts')->insert(['registration_id'=>$registration['id']??null, 'event_id'=>$eventId, 'event_day_id'=>$dayId, 'gate_id'=>null, 'scanner_user_id'=>$scannerId, 'token_hint'=>$token!==''?substr($token,-8):null, 'status'=>$status, 'reason'=>$message, 'attempted_at'=>date('Y-m-d H:i:s')]);
+        $attemptStatus=in_array($status,['allowed','duplicate','denied'],true)?$status:'denied';
+        $this->db->table('scan_attempts')->insert(['registration_id'=>$registration['id']??null, 'event_id'=>$eventId, 'event_day_id'=>$dayId, 'gate_id'=>null, 'scanner_user_id'=>$scannerId, 'token_hint'=>$token!==''?substr($token,-8):null, 'status'=>$attemptStatus, 'reason'=>$message, 'attempted_at'=>date('Y-m-d H:i:s')]);
         $result = ['ok'=>$ok, 'status'=>$status, 'message'=>$message, 'event_id'=>$eventId, 'event_day_id'=>$dayId];
-        if ($registration) $result['registration'] = ['participant_name'=>$registration['participant_name'], 'registration_id'=>$registration['registration_id'], 'event_name'=>$registration['event_name'], 'payment_status'=>$registration['payment_status'], 'qr_status'=>$registration['qr_status'], 'email'=>$registration['email'], 'mobile'=>$registration['mobile'], 'college'=>$registration['college'], 'event_day_label'=>$day['label']??null, 'event_day_date'=>$day['event_date']??null];
+        if ($registration) $result['registration'] = ['participant_name'=>$registration['participant_name'], 'registration_id'=>$registration['registration_id'], 'event_name'=>$registration['event_name'], 'payment_status'=>$registration['payment_status'], 'qr_status'=>$registration['qr_status'], 'email'=>$registration['email'], 'mobile'=>$registration['mobile'], 'college'=>$registration['college'], 'event_day_label'=>$day['label']??null, 'event_day_date'=>$day['event_date']??null, 'event_time'=>$registration['event_start']??null, 'venue'=>$registration['venue']??null];
         if ($entry) $result['entry'] = $entry;
         return $result;
     }

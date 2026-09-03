@@ -50,10 +50,13 @@ $routes->group('admin', ['filter' => 'auth:SUPER_ADMIN,PROGRAMME_ADMIN,EVENT_ADM
     $routes->get('events/(:num)/edit', 'AdminController::editEvent/$1');
     $routes->post('events/(:num)', 'AdminController::updateEvent/$1');
     $routes->post('events/(:num)/delete', 'AdminController::deleteEvent/$1');
+    $routes->post('events/bulk-delete', 'AdminController::bulkDeleteEvents');
     $routes->get('registrations', 'AdminController::registrations');
     $routes->get('registrations/(:segment)', 'AdminController::registration/$1');
     $routes->post('registrations/(:segment)/status', 'AdminController::registrationStatus/$1');
     $routes->get('attendance', 'AdminController::attendance');
+    $routes->get('payments', 'AdminController::payments');
+    $routes->get('entry-tracking', 'AdminController::entryTracking');
     $routes->get('bulk-passes', 'BulkPassController::index');
     $routes->get('bulk-passes/template.csv', 'BulkPassController::downloadTemplate');
     $routes->post('bulk-passes/import', 'BulkPassController::import');
