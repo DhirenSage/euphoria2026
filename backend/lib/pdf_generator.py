@@ -47,58 +47,87 @@ def wrapped(draw: ImageDraw.ImageDraw, text: str, xy: tuple[int, int], width: in
     draw.multiline_text(xy, "\n".join(lines), font=text_font, fill=fill, spacing=spacing)
 
 
-def pass_pdf(data: dict, qr_bytes: bytes) -> bytes:
-    width, height = 1000, 2100
+def fitted_font(draw: ImageDraw.ImageDraw, text: str, max_width: int, start: int, minimum: int, bold: bool = True):
+    size = start
+    while size > minimum and draw.textlength(str(text), font=font(size, bold)) > max_width:
+        size -= 2
+    return font(size, bold)
+
+
+def pass_image(data: dict, qr_bytes: bytes) -> Image.Image:
+    width, height = 1200, 730
     canvas = Image.new("RGBA", (width, height), "#0D0F17")
     draw = ImageDraw.Draw(canvas)
-    palette = ["#FF007A", "#7928CA", "#06B6D4", "#F59E0B"]
-    for y in range(0, 430):
-        ratio = y / 430
-        color = (int(255 * (1 - ratio) + 121 * ratio), int(0 * (1 - ratio) + 40 * ratio), int(122 * (1 - ratio) + 202 * ratio))
-        draw.line((0, y, width, y), fill=color)
-    seed = int(hashlib.sha256(data["registration_id"].encode()).hexdigest()[:12], 16)
-    random.seed(seed)
-    for _ in range(80):
-        x, y = random.randint(0, width), random.randint(0, 430)
-        radius = random.randint(2, 13)
-        draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=palette[random.randrange(len(palette))] + "55")
-    draw.rounded_rectangle((55, 52, 945, 2045), radius=34, fill="#161B26", outline="#334155", width=3)
-    draw.rounded_rectangle((80, 78, 920, 240), radius=24, fill="#FFFFFF")
-    paste_fit(canvas, remote_image(SAGE_LOGO), (105, 98, 425, 220))
-    paste_fit(canvas, remote_image(EUPHORIA_LOGO), (665, 94, 890, 224))
-    draw.text((110, 300), "EUPHORIA 2026  /  OFFICIAL EVENT PASS", font=font(24, True), fill="#FFE4F0")
-    draw.rounded_rectangle((110, 355, 110 + min(470, 34 + len(data["category_name"]) * 20), 413), radius=29, fill="#FF007A")
-    draw.text((132, 370), data["category_name"].upper(), font=font(22, True), fill="#FFFFFF")
-    wrapped(draw, data["event_name"].upper(), (110, 455), 780, font(62, True), "#FFFFFF", spacing=5, max_lines=2)
-    draw.text((110, 620), "PARTICIPANT", font=font(20, True), fill="#06B6D4")
-    wrapped(draw, data["participant_name"].upper(), (110, 660), 780, font(50, True), "#FFFFFF", spacing=4, max_lines=2)
+    draw.rounded_rectangle((18, 18, 1182, 712), radius=25, fill="#151A26", outline="#475569", width=2)
+    for x in range(20, 1180):
+        ratio = (x - 20) / 1160
+        stops = [(255, 0, 122), (121, 40, 202), (6, 182, 212), (245, 158, 11)]
+        segment = min(2, int(ratio * 3)); local = ratio * 3 - segment
+        first, second = stops[segment], stops[segment + 1]
+        color = tuple(int(first[i] * (1 - local) + second[i] * local) for i in range(3))
+        draw.line((x, 18, x, 28), fill=color)
+    draw.rectangle((20, 28, 1180, 112), fill="#FFFFFF")
+    paste_fit(canvas, remote_image(SAGE_LOGO), (48, 43, 300, 98))
+    paste_fit(canvas, remote_image(EUPHORIA_LOGO), (335, 39, 500, 102))
+    draw.rounded_rectangle((1045, 51, 1150, 87), radius=18, fill="#D1FAE5", outline="#6EE7B7", width=2)
+    draw.ellipse((1062, 64, 1072, 74), fill="#10B981")
+    draw.text((1082, 61), "ACTIVE", font=font(14, True), fill="#065F46")
+    for y in range(112, 326):
+        ratio = (y - 112) / 214
+        start, end = (255, 0, 122), (79, 34, 194)
+        color = tuple(int(start[i] * (1 - ratio) + end[i] * ratio) for i in range(3))
+        draw.line((20, y, 800, y), fill=color)
+    draw.ellipse((590, 65, 910, 380), outline="#FFFFFF38", width=3)
+    draw.ellipse((675, 100, 850, 275), fill="#FFFFFF12")
+    draw.text((52, 136), f"{data['category_name'].upper()}  ·  OFFICIAL EVENT PASS", font=font(21, True), fill="#FFE4F0")
+    event_name = data["event_name"].upper()
+    draw.text((52, 178), event_name, font=fitted_font(draw, event_name, 700, 64, 36), fill="#FFFFFF")
+    draw.rounded_rectangle((52, 260, 277, 298), radius=19, fill="#17102A")
+    draw.text((74, 270), "PARTICIPANT  /  2026", font=font(14, True), fill="#FFFFFF")
+    draw.rectangle((20, 326, 800, 630), fill="#151A26")
+    draw.text((52, 348), "THIS PASS BELONGS TO", font=font(18, True), fill="#22D3EE")
+    participant = data["participant_name"].upper()
+    draw.text((52, 378), participant, font=fitted_font(draw, participant, 700, 46, 30), fill="#FFFFFF")
     details = [
-        ("REGISTRATION ID", data["registration_id"]), ("PAYMENT / PASS", f"{data.get('payment_status','VERIFIED').replace('_',' ').upper()}  ·  ACTIVE"),
-        ("DATE & TIME", f"{data['event_date']}\n{data.get('event_time','As per schedule')}"), ("VENUE", data["venue"]),
-        ("COLLEGE / INSTITUTION", data.get("college", "Registered participant")), ("PASS TYPE", "EVENT PARTICIPANT"),
+        ("REGISTRATION ID", data["registration_id"]),
+        ("PAYMENT / PASS", f"{data.get('payment_status','VERIFIED').replace('_',' ').upper()} · ACTIVE"),
+        ("DATE & TIME", f"{data['event_date']} · {data.get('event_time','As per schedule')}"),
+        ("VENUE", data["venue"]),
+        ("COLLEGE / INSTITUTION", data.get("college", "Registered participant")),
     ]
-    top = 800
     for index, (label, value) in enumerate(details):
-        column, row = index % 2, index // 2
-        x, y = 110 + column * 395, top + row * 150
-        draw.text((x, y), label, font=font(17, True), fill="#94A3B8")
-        wrapped(draw, value, (x, y + 34), 345, font(25, True), "#F8FAFC", spacing=4, max_lines=2)
-    separator_y = 1265
-    draw.line((90, separator_y, 910, separator_y), fill="#475569", width=3)
-    for x in range(105, 910, 35):
-        draw.line((x, separator_y, min(x + 16, 910), separator_y), fill="#CBD5E1", width=3)
-    draw.ellipse((-30, separator_y - 32, 34, separator_y + 32), fill="#0D0F17")
-    draw.ellipse((966, separator_y - 32, 1030, separator_y + 32), fill="#0D0F17")
-    draw.text((110, 1305), "SCAN AT AUTHORIZED GATE", font=font(22, True), fill="#F59E0B")
-    qr = Image.open(BytesIO(qr_bytes)).convert("RGB").resize((390, 390), Image.Resampling.NEAREST)
-    draw.rounded_rectangle((305, 1350, 695, 1740), radius=18, fill="#FFFFFF")
-    canvas.paste(qr, (305, 1350))
+        if index < 4:
+            column, row = index % 2, index // 2
+            x, y, box_width = 52 + column * 360, 438 + row * 68, 342
+        else:
+            x, y, box_width = 52, 568, 702
+        draw.rounded_rectangle((x, y, x + box_width, y + 60), radius=8, fill="#1D2533", outline="#334155", width=1)
+        draw.text((x + 12, y + 7), label, font=font(14, True), fill="#94A3B8")
+        draw.text((x + 12, y + 31), value, font=fitted_font(draw, value, box_width - 24, 22, 14), fill="#FFFFFF")
+    draw.rectangle((800, 112, 1180, 630), fill="#FFFFFF")
+    draw.text((990, 153), "SECURE ENTRY CODE", anchor="ma", font=font(17, True), fill="#FF007A")
+    draw.text((990, 190), "Scan at authorized gate", anchor="ma", font=font(25, True), fill="#0F172A")
     security = hashlib.sha256(data["registration_id"].encode()).hexdigest()[:12].upper()
-    draw.text((500, 1762), f"SECURITY  {security}", anchor="ma", font=font(18, True), fill="#94A3B8")
-    instructions = "VALID PHOTO ID REQUIRED  •  NON-TRANSFERABLE  •  ONE ENTRY PER CONFIGURED EVENT DAY  •  KEEP QR READY"
-    wrapped(draw, instructions, (125, 1820), 750, font(18, True), "#CBD5E1", spacing=7, max_lines=3)
-    draw.rounded_rectangle((110, 1940, 890, 2005), radius=32, fill="#10B981")
-    draw.text((500, 1972), "VERIFIED  •  READY FOR ENTRY", anchor="mm", font=font(22, True), fill="#062817")
+    draw.text((990, 220), f"#{security}", anchor="ma", font=font(15, True), fill="#64748B")
+    qr = Image.open(BytesIO(qr_bytes)).convert("RGB").resize((290, 290), Image.Resampling.NEAREST)
+    draw.rounded_rectangle((845, 250, 1135, 540), radius=18, fill="#FFFFFF", outline="#0F172A", width=3)
+    canvas.paste(qr, (845, 250))
+    draw.text((990, 565), "PURE BLACK-ON-WHITE QR", anchor="ma", font=font(14, True), fill="#64748B")
+    draw.text((990, 592), "Keep screen brightness high", anchor="ma", font=font(16, True), fill="#0F172A")
+    draw.rectangle((20, 630, 1180, 710), fill="#0A0E17")
+    footer_items = [("01", "Carry valid institutional photo ID"), ("02", "Non-transferable; valid for this event only"), ("03", "One entry per configured event day")]
+    for index, (number, text) in enumerate(footer_items):
+        x = 42 + index * 386
+        if index:
+            draw.line((x - 18, 630, x - 18, 710), fill="#334155", width=2)
+        draw.text((x, 643), number, font=font(17, True), fill="#F59E0B")
+        draw.text((x, 674), text, font=fitted_font(draw, text, 335, 17, 13), fill="#E2E8F0")
+    draw.line((800, 112, 800, 630), fill="#64748B", width=2)
+    return canvas.convert("RGB")
+
+
+def pass_pdf(data: dict, qr_bytes: bytes) -> bytes:
+    canvas = pass_image(data, qr_bytes)
     output = BytesIO()
-    canvas.convert("RGB").save(output, format="PDF", resolution=254.0, quality=95, title=f"EUPHORIA Pass {data['registration_id']}")
+    canvas.save(output, format="PDF", resolution=150.0, quality=95, title=f"EUPHORIA Pass {data['registration_id']}")
     return output.getvalue()

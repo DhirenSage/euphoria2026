@@ -744,7 +744,7 @@ async def get_pass(registration_id: str, request: Request, key: str = ""):
 
 
 @router.get("/passes/{registration_id}/pdf")
-async def download_pass_pdf(registration_id: str, request: Request, key: str = ""):
+async def download_pass_pdf(registration_id: str, request: Request, key: str = "", inline: bool = False):
     registration, event_row, token, image_bytes = await authorized_pass(registration_id, request, key)
     data = {
         "registration_id": registration_id, "participant_name": registration["participant_name"],
@@ -757,7 +757,7 @@ async def download_pass_pdf(registration_id: str, request: Request, key: str = "
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{registration_id}-complete-event-pass.pdf"'},
+        headers={"Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{registration_id}-complete-event-pass.pdf"'},
     )
 
 
