@@ -6,7 +6,9 @@ Prepared for `https://sageuniversity.in/euphoria/` using cPanel File Manager, ph
 
 - `euphoria-cpanel-single-folder.zip` — extract directly inside `/public_html/euphoria`
 - `euphoria_initial.sql` — import into a new empty database through phpMyAdmin; never upload it into `public_html`
-- `SHA256SUMS.txt` — integrity hashes for both artifacts
+- `euphoria-codeigniter-source.zip` — complete clean CodeIgniter source backup with bundled `vendor/`, tests, docs and deploy templates; local `.env` and writable runtime data are excluded
+- `pre-cleanup-active-preview-backup.zip` — secret-free recovery copy of the FastAPI/React preview source and test artifacts before any future workspace cleanup
+- `SHA256SUMS.txt` — integrity hashes for all release and backup artifacts
 
 The full step-by-step handbook is `/app/codeigniter/CPANEL_SINGLE_FOLDER_DEPLOYMENT.md`.
 
@@ -22,3 +24,7 @@ This release also includes automatic event/day QR routing with no gate selector,
 Latest Admin update: Events now support exact-name single permanent deletion and confirmation-protected checkbox bulk deletion with full related-data cleanup. Admin modules use separate routes, and a pre-event QR shows participant/event/date/time/venue as UPCOMING without saving attendance.
 
 Live Easebuzz callback, SMTP delivery, cron, HTTPS camera permission, and Apache rewrite behavior must still be validated on the actual cPanel host.
+
+## Cleanup status
+
+No workspace folders have been deleted. The active-preview folders remain in place until a separate explicit deletion confirmation is provided.
