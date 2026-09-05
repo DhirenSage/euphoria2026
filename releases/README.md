@@ -23,6 +23,8 @@ This release also includes automatic event/day QR routing with no gate selector,
 
 Latest Admin update: Events now support exact-name single permanent deletion and confirmation-protected checkbox bulk deletion with full related-data cleanup. Admin modules use separate routes, and a pre-event QR shows participant/event/date/time/venue as UPCOMING without saving attendance.
 
+Latest registration/mobile update: every event has separate SAGEian and Non-SAGEian fees, event-specific registration URLs lock the event/category, and the server calculates payment from affiliation. Public, Registration, Pass, Admin, Scanner, Reports, Media and authentication layouts are responsive; mobile Admin uses horizontally scrollable route tabs. Live Easebuzz/SMTP values remain excluded and must be configured only in cPanel `.env`.
+
 Live Easebuzz callback, SMTP delivery, cron, HTTPS camera permission, and Apache rewrite behavior must still be validated on the actual cPanel host.
 
 ## Cleanup status

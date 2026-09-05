@@ -5,6 +5,9 @@ $preselectedEventId = (int)(old('event_id') ?: ($routeEventId ?? 0));
 $preselectedCategoryId = (int)(old('category_id') ?: ($routeEventId ? $event['category_id'] : 0));
 $selectedEvent = null;
 foreach ($events as $candidate) if ((int)$candidate['id'] === $preselectedEventId) $selectedEvent = $candidate;
+$lockedEvent = $routeEventId !== null;
+$selectedAffiliation = (string) old('participant_affiliation');
+$initialFee = $selectedEvent ? ($selectedAffiliation ? money(event_affiliation_fee($selectedEvent, $selectedAffiliation)) : event_fee_label($selectedEvent)) : '₹—';
 $fieldsByEvent = [];
 foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $field;
 ?>
@@ -17,13 +20,13 @@ foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $f
     </div>
     <div class="registration-hero-copy">
       <span class="registration-step-pill">01 · Details</span>
-      <span class="registration-step-pill">02 · Event</span>
+      <span class="registration-step-pill">02 · <?= $lockedEvent ? 'Event locked' : 'Event' ?></span>
       <span class="registration-step-pill">03 · Payment</span>
       <p data-testid="registration-selected-summary"><?= $selectedEvent ? esc($selectedEvent['name']) : 'Choose from 32 cultural, literary, science and sports events.' ?></p>
     </div>
   </section>
 
-  <form method="post" enctype="multipart/form-data" action="<?= base_url('registration') ?>" class="registration-form registration-form-layout" data-testid="registration-form">
+  <form method="post" enctype="multipart/form-data" action="<?= $lockedEvent ? base_url('registration/'.$event['slug']) : base_url('registration') ?>" class="registration-form registration-form-layout" data-testid="registration-form">
     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
 
     <div class="registration-form-card">
@@ -69,10 +72,12 @@ foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $f
 
       <div class="form-section registration-choice-section">
         <span class="form-section-number">02</span>
-        <div class="registration-section-heading">
-          <span class="eyebrow">EVENT SELECTION</span>
-          <h3>Choose where you want to compete</h3>
-        </div>
+        <?php if($lockedEvent): ?>
+        <div class="registration-section-heading"><span class="eyebrow">YOUR EVENT</span><h3>Event selected from the event page</h3></div>
+        <div class="registration-locked-event" data-testid="registration-locked-event"><div><span class="eyebrow">REGISTERING FOR</span><strong><?= esc($selectedEvent['name']) ?></strong></div><div><span class="eyebrow">SAGEian</span><strong><?= event_affiliation_fee($selectedEvent,'sageian')>0?esc(money(event_affiliation_fee($selectedEvent,'sageian'))):'FREE' ?></strong></div><div><span class="eyebrow">NON-SAGEian</span><strong><?= event_affiliation_fee($selectedEvent,'non_sageian')>0?esc(money(event_affiliation_fee($selectedEvent,'non_sageian'))):'FREE' ?></strong></div><span class="registration-lock-mark">LOCKED</span></div>
+        <div class="registration-event-selectors-hidden" hidden aria-hidden="true"><select id="registration-category" name="category_id" required><option value="<?= esc($preselectedCategoryId) ?>" selected><?= esc($event['category_name']) ?></option></select><div id="registration-event-panel"><select id="registration-event" name="event_id" required data-selected-event="<?= esc($preselectedEventId) ?>"><option value="">Choose an event</option></select></div></div>
+        <?php else: ?>
+        <div class="registration-section-heading"><span class="eyebrow">EVENT SELECTION</span><h3>Choose where you want to compete</h3></div>
         <div class="form-grid registration-event-grid">
           <label>Event category <b>*</b>
             <select id="registration-category" name="category_id" required data-testid="registration-category-select">
@@ -90,10 +95,11 @@ foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $f
             </label>
           </div>
         </div>
+        <?php endif ?>
 
         <div id="registration-event-details" class="event-selection-summary <?= $selectedEvent ? 'is-visible' : '' ?>" data-testid="registration-event-details">
           <div><span class="eyebrow">SELECTED EVENT</span><strong id="registration-event-name"><?= esc($selectedEvent['name'] ?? '—') ?></strong></div>
-          <div><span class="eyebrow">FEE</span><strong id="registration-event-fee"><?= $selectedEvent ? esc(money($selectedEvent['fee'])) : '₹—' ?></strong></div>
+          <div><span class="eyebrow">AFFILIATION FEE</span><strong id="registration-event-fee"><?= esc($initialFee) ?></strong></div>
           <div><span class="eyebrow">ENTRY</span><strong id="registration-event-type"><?= $selectedEvent ? esc(strtoupper($selectedEvent['registration_type'])) : '—' ?></strong></div>
         </div>
 
@@ -123,8 +129,8 @@ foreach ($customFields as $field) $fieldsByEvent[(int)$field['event_id']][] = $f
       </div>
       <div class="registration-summary-price">
         <span>Entry fee</span>
-        <strong id="registration-fee-value"><?= $selectedEvent ? esc(money($selectedEvent['fee'])) : '₹—' ?></strong>
-        <small>Final amount is verified from the event database.</small>
+        <strong id="registration-fee-value" data-testid="registration-affiliation-price"><?= esc($initialFee) ?></strong>
+        <small id="registration-fee-note"><?= $selectedAffiliation ? esc(ucfirst(str_replace('_','-',$selectedAffiliation)).' event fee selected.') : 'Choose SAGEian or Non-SAGEian to see your exact amount.' ?></small>
       </div>
       <div class="registration-summary-points">
         <span><b>✓</b> Secure server-side pricing</span>

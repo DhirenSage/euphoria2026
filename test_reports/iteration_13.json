@@ -1,0 +1,76 @@
+{
+  "iteration": 13,
+  "mode": "retest",
+  "summary": "Retest of the dual-fee (SAGEian/Non-SAGEian) affiliation pricing release: 8/8 acceptance-matrix criteria re-verified. 3 backend pytest files (13 tests) re-run against the live server/DB, all passing. 6 existing named browser checks re-run by name only (no script resent), all passing.",
+  "criteria_count": 8,
+  "passed": 9,
+  "failed": 0,
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "checks": [
+    {
+      "criterion": "Event-specific registration hides dynamic selectors",
+      "name": "registration-locked-event-hides-selectors",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted). /registration/dance-competition shows locked event/category, both affiliation prices, no event/category selectors. Screenshots: locked-summary, after-switch-non-sageian."
+    },
+    {
+      "criterion": "Affiliation selection never clears the amount",
+      "name": "non-sageian-keeps-fee-desktop",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted). SAGEian selection shows fee, switching to Non-SAGEian keeps amount visible. Screenshots: sageian-selected, non-sageian-selected."
+    },
+    {
+      "criterion": "Affiliation selection never clears the amount (mobile)",
+      "name": "non-sageian-fee-visible-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted). Non-SAGEian fee remains visible at mobile viewport. Screenshot: non-sageian-chess-mobile."
+    },
+    {
+      "criterion": "Server calculates affiliation-specific payment",
+      "name": "test_tscheck_affiliation_pricing.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "pytest -q tests/test_tscheck_affiliation_pricing.py tests/test_tscheck_migration_dual_fee_columns.py tests/test_tscheck_secret_safety.py -> '13 passed in 1.09s' against live server (localhost:8001 healthy, CI 127.0.0.1:8091 200). Confirms Non-SAGEian persists total_amount 250, SAGEian persists 100, tampered posted IDs/amount cannot override server-locked pricing."
+    },
+    {
+      "criterion": "Admin manages two event fees",
+      "name": "ci-admin-dual-fee-management",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted). Event Builder saves both fees; Events list and public event detail display both. Screenshots: admin-events-list-dual-fee, public-event-detail-dual-fee."
+    },
+    {
+      "criterion": "Legacy prices migrate safely",
+      "name": "test_tscheck_migration_dual_fee_columns.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Included in the same pytest run above (13 passed). Migration 000006 adds/copies both fee columns; fresh seeds populate them."
+    },
+    {
+      "criterion": "All public and registration pages are mobile responsive",
+      "name": "ci-public-pages-mobile-no-overflow",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted) at 390px: home, events, event-detail, registration-general, registration-locked, gallery, admin-login, scanner-login all rendered without body overflow. 8 screenshots captured."
+    },
+    {
+      "criterion": "Admin and scanner are mobile responsive",
+      "name": "ci-admin-scanner-mobile-responsive",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-run by name (reran-persisted). Admin dashboard and events route tabs (sticky horizontal scroll) and scanner login all fit at mobile viewport without body overflow. Screenshots: admin-dashboard-mobile, admin-events-tabs-mobile, scanner-login-mobile."
+    },
+    {
+      "criterion": "Production integrations remain secret-safe",
+      "name": "test_tscheck_secret_safety.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Included in the same pytest run above (13 passed). Artifacts contain no real .env/credentials; production template uses placeholders and prod/gateway mode; no live charge occurs."
+    }
+  ]
+}

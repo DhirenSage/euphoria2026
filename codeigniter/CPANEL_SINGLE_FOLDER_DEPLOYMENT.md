@@ -161,6 +161,8 @@ encryption.key = hex2bin:PASTE_THE_64_HEX_CHARACTERS
 
 Never reuse a preview key or place real database, payment, SMTP, or encryption secrets in Git/chat/documentation.
 
+Live Easebuzz and Google Workspace credentials must remain only in this cPanel `.env`. Do not paste them into controllers, services, JavaScript, SQL, GitHub, or the ZIP. The temporary preflight page reports only whether required values are configured; it never displays the values.
+
 ## 8. Verify the security blocks before login
 
 Open these URLs. Every one must return **403 Forbidden** (404 is also acceptable), never file contents:
@@ -210,6 +212,14 @@ Open **Bulk passes**, download the template, and upload a `.csv` or `.xlsx` list
 Admin modules are separate routes, so opening Events, Participants, Attendance, Payments, Entry Tracking, Media, Bulk Passes, or Scanner Users loads only that module's data. The Events page is searchable, filterable, paginated, and supports checkbox bulk cleanup.
 
 `Permanent Delete` is SUPER ADMIN only. A single deletion requires typing the exact event name; bulk deletion requires `DELETE SELECTED`. It irreversibly removes the event's registrations, payment records, QR/pass data, attendance, scan attempts, queued email records, schedules, custom fields, event media links, and stored pass/media files. Export/backup MySQL before using it on production data.
+
+### SAGEian / Non-SAGEian event pricing
+
+Each event has separate **SAGEian fee** and **Non-SAGEian fee** fields. Existing fee values are copied into both fields by migration 000006. Event-specific registration URLs lock the event/category; selecting affiliation updates the visible amount, while the server independently recalculates the authoritative payment amount before creating the registration.
+
+### Mobile layouts
+
+Public, Registration, Pass, Scanner, Admin, Reports, Media and authentication pages are responsive. On mobile, Admin uses a sticky top header with horizontally scrollable module tabs; tables scroll horizontally and forms/cards collapse to one column.
 
 ## 10. Replace demo accounts before launch
 

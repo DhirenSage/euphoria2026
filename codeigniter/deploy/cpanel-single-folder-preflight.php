@@ -7,6 +7,15 @@
  */
 
 $root = __DIR__;
+$envText = is_file($root . '/.env') ? (string) file_get_contents($root . '/.env') : '';
+$envValue = static function (string $key) use ($envText): string {
+    if (! preg_match('/^\s*' . preg_quote($key, '/') . '\s*=\s*[\'\"]?([^\'\"\r\n]+)[\'\"]?\s*$/mi', $envText, $matches)) return '';
+    return trim($matches[1]);
+};
+$configured = static function (string $key) use ($envValue): bool {
+    $value = $envValue($key);
+    return $value !== '' && ! str_contains(strtoupper($value), 'REPLACE_');
+};
 $requiredExtensions = ['curl', 'dom', 'fileinfo', 'gd', 'intl', 'mbstring', 'mysqli', 'openssl', 'simplexml', 'zip'];
 $checks = [
     'PHP 8.2 or newer' => version_compare(PHP_VERSION, '8.2.0', '>='),
@@ -17,6 +26,11 @@ $checks = [
     'Writable directory is writable' => is_writable($root . '/writable'),
     'Root front controller exists' => is_file($root . '/index.php'),
     'Root .htaccess exists' => is_file($root . '/.htaccess'),
+    'Production mode enabled' => strtolower($envValue('CI_ENVIRONMENT')) === 'production',
+    'Easebuzz live mode enabled' => strtolower($envValue('EASEBUZZ_ENV')) === 'prod' && strtolower($envValue('PAYMENT_MODE')) === 'gateway',
+    'Easebuzz live key configured' => $configured('EASEBUZZ_KEY'),
+    'Easebuzz live salt configured' => $configured('EASEBUZZ_SALT'),
+    'SMTP account configured' => $configured('email.SMTPUser') && $configured('email.SMTPPass'),
 ];
 
 foreach ($requiredExtensions as $extension) {

@@ -19,7 +19,9 @@ final class RegistrationService
         $count = $this->db->table('registrations')->where('event_id', $lockedEvent['id'])->whereIn('status', ['pending_payment','confirmed'])->countAllResults();
         if ((int) $lockedEvent['capacity'] > 0 && $count >= (int) $lockedEvent['capacity']) throw new RuntimeException('This event has reached its registration capacity.');
         $registrationId = $this->nextRegistrationId();
-        $amount = max(0, (float) $lockedEvent['fee'] + (float) ($lockedEvent['tax_amount'] ?? 0) - (float) ($lockedEvent['discount_amount'] ?? 0));
+        $affiliation = ($input['participant_affiliation'] ?? '') === 'sageian' ? 'sageian' : 'non_sageian';
+        $baseFee = event_affiliation_fee($lockedEvent, $affiliation);
+        $amount = max(0, $baseFee + (float) ($lockedEvent['tax_amount'] ?? 0) - (float) ($lockedEvent['discount_amount'] ?? 0));
         $status = !empty($lockedEvent['payment_required']) && $amount > 0 ? 'pending_payment' : 'confirmed';
         $now = date('Y-m-d H:i:s');
         $registrationType = in_array($lockedEvent['registration_type'], ['individual','team'], true) ? $lockedEvent['registration_type'] : 'individual';
@@ -29,7 +31,7 @@ final class RegistrationService
         if ($registrationType === 'team' && !empty($lockedEvent['min_team_size']) && $teamSize < (int) $lockedEvent['min_team_size']) throw new RuntimeException('This event requires at least ' . $lockedEvent['min_team_size'] . ' team members including the captain.');
         if ($registrationType === 'team' && !empty($lockedEvent['max_team_size']) && $teamSize > (int) $lockedEvent['max_team_size']) throw new RuntimeException('This event allows at most ' . $lockedEvent['max_team_size'] . ' team members including the captain.');
         $passAccess = bin2hex(random_bytes(24));
-        $row = ['event_id'=>$lockedEvent['id'],'registration_id'=>$registrationId,'participant_name'=>trim($input['participant_name']),'father_name'=>trim($input['father_name'] ?? ''),'email'=>strtolower(trim($input['email'])),'mobile'=>trim($input['mobile']),'age'=>($input['age'] ?? '') !== '' ? (int)$input['age'] : null,'college'=>trim($input['college'] ?? ''),'city'=>trim($input['city'] ?? ''),'participant_affiliation'=>$input['participant_affiliation'],'registration_type'=>$registrationType,'team_name'=>$registrationType === 'team' ? trim($input['team_name'] ?? '') : null,'total_amount'=>$amount,'status'=>$status,'qr_status'=>'active','pass_access_hash'=>hash('sha256',$passAccess),'pass_access_ciphertext'=>base64_encode(service('encrypter')->encrypt($passAccess)),'created_at'=>$now,'updated_at'=>$now];
+        $row = ['event_id'=>$lockedEvent['id'],'registration_id'=>$registrationId,'participant_name'=>trim($input['participant_name']),'father_name'=>trim($input['father_name'] ?? ''),'email'=>strtolower(trim($input['email'])),'mobile'=>trim($input['mobile']),'age'=>($input['age'] ?? '') !== '' ? (int)$input['age'] : null,'college'=>trim($input['college'] ?? ''),'city'=>trim($input['city'] ?? ''),'participant_affiliation'=>$affiliation,'registration_type'=>$registrationType,'team_name'=>$registrationType === 'team' ? trim($input['team_name'] ?? '') : null,'total_amount'=>$amount,'status'=>$status,'qr_status'=>'active','pass_access_hash'=>hash('sha256',$passAccess),'pass_access_ciphertext'=>base64_encode(service('encrypter')->encrypt($passAccess)),'created_at'=>$now,'updated_at'=>$now];
         $this->db->table('registrations')->insert($row);
         $registrationDbId = (int) $this->db->insertID();
         $rawToken = 'EUPHORIA-' . bin2hex(random_bytes(20));

@@ -79,3 +79,18 @@ The primary no-SSH deployment target is a hardened single-folder package extract
 ## Upcoming pass scan
 - In CodeIgniter, date enforcement is always strict: a valid confirmed QR scanned before its next configured event date returns `upcoming`, participant/event/date/time/venue details, and “UPCOMING EVENT — ENTRY NOT OPEN”. It writes no attendance row.
 - On a configured date, the same QR records attendance once. After the final configured date it expires; same-day repeats remain duplicate.
+
+## CodeIgniter affiliation pricing
+- Every event stores `sageian_fee` and `non_sageian_fee`. Migration 000006 copies each legacy `fee` into both fields so existing prices remain unchanged until Admin edits them.
+- Admin Event Builder edits both amounts. The legacy `fee` column mirrors Non-SAGEian fee only for backward compatibility; registration/payment calculations never trust it or client-displayed text.
+- RegistrationService chooses the base amount from the submitted participant affiliation on the server, then applies event tax/discount. For team registrations the captain/registrant affiliation determines the team price.
+- Event-detail cards and registration summary show both prices before affiliation selection. Selecting SAGEian or Non-SAGEian immediately shows the exact fee without clearing the event.
+- Opening `/registration/{event-slug}` locks the event/category and hides selection controls; general `/registration` retains dynamic selectors.
+
+## CodeIgniter responsive behavior
+- All public, event, registration, success/pass, auth, scanner, gallery/media, Admin, report and table screens have mobile layouts down to 320px.
+- Mobile Admin uses a sticky compact header with horizontally scrollable route tabs; each route still renders only its own module. Wide tables remain horizontally scrollable and forms/cards collapse to one column.
+
+## Production integration secrets
+- Easebuzz live key/salt and Google Workspace SMTP/App Password are read only from the production cPanel `.env`; they are never hardcoded, committed, or included in source/release ZIPs.
+- Production requires `EASEBUZZ_ENV=prod`, `PAYMENT_MODE=gateway`, product info `euphoria2026`, TLS SMTP, server-side callback verification, and the approved `/euphoria/payments/easebuzz/callback` URL. A low-value live charge is intentionally deferred until after deployment.

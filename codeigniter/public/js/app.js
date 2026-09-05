@@ -12,10 +12,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var fieldsByEvent = fieldsData ? JSON.parse(fieldsData.textContent || '{}') : {};
     var teamPanel = document.getElementById('registration-team-panel');
     var teamName = document.getElementById('registration-team-name');
+    var affiliationSelect = document.querySelector('[name="participant_affiliation"]');
     var preselectedEvent = registrationEvent.dataset.selectedEvent || '';
+    var selectedRegistrationEvent = null;
 
     function money(amount) { return '₹' + Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
+    function eventFee(event) {
+      if (!event) return '₹—';
+      var sageian = Number(event.sageian_fee == null ? event.fee : event.sageian_fee);
+      var nonSageian = Number(event.non_sageian_fee == null ? event.fee : event.non_sageian_fee);
+      var affiliation = affiliationSelect ? affiliationSelect.value : '';
+      if (affiliation === 'sageian') return sageian > 0 ? money(sageian) : 'FREE';
+      if (affiliation === 'non_sageian') return nonSageian > 0 ? money(nonSageian) : 'FREE';
+      if (sageian === nonSageian) return sageian > 0 ? money(sageian) : 'FREE';
+      return 'SAGEian ' + (sageian > 0 ? money(sageian) : 'FREE') + ' · Non-SAGEian ' + (nonSageian > 0 ? money(nonSageian) : 'FREE');
+    }
+    function renderSelectedFee() {
+      var fee = eventFee(selectedRegistrationEvent);
+      document.getElementById('registration-fee-value').textContent = fee;
+      document.getElementById('registration-event-fee').textContent = fee;
+      var note = document.getElementById('registration-fee-note');
+      if (note) note.textContent = affiliationSelect && affiliationSelect.value ? (affiliationSelect.value === 'sageian' ? 'SAGEian event fee selected.' : 'Non-SAGEian event fee selected.') : 'Choose SAGEian or Non-SAGEian to see your exact amount.';
+    }
     function clearEvent() {
+      selectedRegistrationEvent = null;
       registrationEvent.innerHTML = '<option value="">Choose an event</option>';
       eventDetails.classList.remove('is-visible');
       teamPanel.classList.remove('is-visible');
@@ -48,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var categoryId = registrationCategory.value;
       if (!categoryId) { eventPanel.classList.remove('is-visible'); return; }
       registrationEvents.filter(function(event){ return String(event.category_id) === categoryId; }).forEach(function(event){
-        var option = document.createElement('option'); option.value = event.id; option.textContent = event.name + ' – ' + money(event.fee); registrationEvent.appendChild(option);
+        var option = document.createElement('option'); option.value = event.id; option.textContent = event.name + ' – ' + eventFee(event); registrationEvent.appendChild(option);
       });
       eventPanel.classList.add('is-visible');
       if (keepSelection && preselectedEvent && registrationEvent.querySelector('option[value="' + preselectedEvent + '"]')) { registrationEvent.value = preselectedEvent; registrationEvent.dispatchEvent(new Event('change')); }
@@ -56,17 +76,17 @@ document.addEventListener('DOMContentLoaded', function () {
     registrationCategory.addEventListener('change', function(){ preselectedEvent = ''; loadEvents(false); });
     registrationEvent.addEventListener('change', function(){
       var selected = registrationEvents.find(function(event){ return String(event.id) === registrationEvent.value; });
+      selectedRegistrationEvent = selected || null;
       if (!selected) { eventDetails.classList.remove('is-visible'); teamPanel.classList.remove('is-visible'); teamName.required = false; document.getElementById('registration-fee-value').textContent = '₹—'; return; }
-      var fee = money(selected.fee);
-      document.getElementById('registration-fee-value').textContent = fee;
       document.getElementById('registration-event-name').textContent = selected.name;
-      document.getElementById('registration-event-fee').textContent = fee;
+      renderSelectedFee();
       document.getElementById('registration-event-type').textContent = String(selected.registration_type).toUpperCase();
       eventDetails.classList.add('is-visible');
       renderCustomFields(selected.id);
       var isTeam = selected.registration_type === 'team'; teamPanel.classList.toggle('is-visible', isTeam); teamName.required = isTeam;
       document.getElementById('registration-team-size').textContent = isTeam && selected.min_team_size ? 'TEAM SIZE / ' + selected.min_team_size + '–' + selected.max_team_size + ' MEMBERS' : '';
     });
+    if (affiliationSelect) affiliationSelect.addEventListener('change', function(){ renderSelectedFee(); });
     loadEvents(true);
   }
   document.querySelectorAll('[data-confirm]').forEach(function(element){ element.addEventListener('click',function(event){ if(!window.confirm(element.dataset.confirm||'Continue?'))event.preventDefault(); }); });
